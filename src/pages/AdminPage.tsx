@@ -11,7 +11,7 @@ import {
   TableCell,
   TableBody,
 } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import supabase from '../supabase';
 import PageTemplate from './PageTemplate';
 import { Person } from '../types/personTypes';
@@ -34,23 +34,16 @@ const fetchPersons = async (): Promise<Person[]> => {
 
 const PersonTable: React.FC = () => {
   // React Query to fetch data
-  const { data, isLoading, isError, error, refetch } = useQuery<Person[], Error>({
+  const { data } = useSuspenseQuery<Person[], Error>({
     queryKey: ['persons'], // Unique key for the query
     queryFn: fetchPersons, // Function to fetch data
   });
 
-  if (isLoading) {
-    return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
-      </Container>
-    );
-  }
 
   return (
     <Container sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Person Table
+      <Typography variant="h4" gutterBottom color='black'>
+        Uyeler
       </Typography>
       <TableContainer component={Paper}>
         <Table>
