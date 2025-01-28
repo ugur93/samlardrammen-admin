@@ -14,9 +14,7 @@ export const queryClient = new QueryClient({
 export default function PageTemplate({ children }: PropsWithChildren<unknown>) {
     return (
         <QueryClientProvider client={queryClient}>
-            <Box sx={{ flexGrow: 1 }}>
-                <AppBar position="static">{children}</AppBar>
-            </Box>
+            <AppBar position="static">{children}</AppBar>
         </QueryClientProvider>
     );
 }
