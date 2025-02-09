@@ -1,13 +1,12 @@
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
-import { createClient } from "@supabase/supabase-js";
-import { Card, CardContent, Input, Button } from "@mui/material";
-import supabase from "../supabase";
-import { LoginFormValues, ChangePasswordValues } from "../types/formTypes";
-import { changePasswordMutation, loginMutation } from "../api/usePersonsApi";
-import { useNavigate } from "react-router";
-
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useMutation } from '@tanstack/react-query';
+import { createClient } from '@supabase/supabase-js';
+import { Card, CardContent, Input, Button } from '@mui/material';
+import supabase from '../supabase';
+import { LoginFormValues, ChangePasswordValues } from '../types/formTypes';
+import { changePasswordMutation, loginMutation } from '../api/usePersonsApi';
+import { useNavigate } from 'react-router';
 
 const LoginPage: React.FC = () => {
     const [showChangePassword, setShowChangePassword] = useState(false);
@@ -19,9 +18,8 @@ const LoginPage: React.FC = () => {
     } = useForm<ChangePasswordValues>();
     const navigate = useNavigate();
 
-    const changePasswordMutationFn = changePasswordMutation()
-    const loginMutationFn = loginMutation()
-
+    const changePasswordMutationFn = changePasswordMutation();
+    const loginMutationFn = loginMutation();
 
     const onLoginSubmit = (data: LoginFormValues) => {
         loginMutationFn.mutate(data, {
@@ -39,7 +37,7 @@ const LoginPage: React.FC = () => {
             },
             onError: (error) => {
                 alert(error);
-                console.log("Det skjedde en feil ved innlogging", error)
+                console.log('Det skjedde en feil ved innlogging', error);
             },
         });
     };
@@ -52,12 +50,27 @@ const LoginPage: React.FC = () => {
                         <h1 className="text-2xl font-bold mb-4 text-center text-blue-600">Login</h1>
                         <form onSubmit={handleSubmit(onLoginSubmit)}>
                             <div className="mb-4">
-                                <Input {...register("email")} placeholder="Email" type="email" required className="border rounded-md p-2 w-full" />
+                                <Input
+                                    {...register('email')}
+                                    placeholder="Email"
+                                    type="email"
+                                    required
+                                    className="border rounded-md p-2 w-full"
+                                />
                             </div>
                             <div className="mb-4">
-                                <Input {...register("password")} type="password" placeholder="Password" required className="border rounded-md p-2 w-full" />
+                                <Input
+                                    {...register('password')}
+                                    type="password"
+                                    placeholder="Password"
+                                    required
+                                    className="border rounded-md p-2 w-full"
+                                />
                             </div>
-                            <Button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
+                            <Button
+                                type="submit"
+                                className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
+                            >
                                 Login
                             </Button>
                         </form>
@@ -66,7 +79,7 @@ const LoginPage: React.FC = () => {
                             className="mt-4 w-full bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600"
                             onClick={() => setShowChangePassword(!showChangePassword)}
                         >
-                            {showChangePassword ? "Cancel" : "Change Password"}
+                            {showChangePassword ? 'Cancel' : 'Change Password'}
                         </Button>
 
                         {showChangePassword && (
@@ -75,7 +88,7 @@ const LoginPage: React.FC = () => {
                                 <form onSubmit={handleChangePasswordSubmit(onChangePasswordSubmit)}>
                                     <div className="mb-4">
                                         <Input
-                                            {...registerChangePassword("currentPassword")}
+                                            {...registerChangePassword('currentPassword')}
                                             type="password"
                                             placeholder="Current Password"
                                             required
@@ -84,7 +97,7 @@ const LoginPage: React.FC = () => {
                                     </div>
                                     <div className="mb-4">
                                         <Input
-                                            {...registerChangePassword("newPassword")}
+                                            {...registerChangePassword('newPassword')}
                                             type="password"
                                             placeholder="New Password"
                                             required
@@ -93,14 +106,17 @@ const LoginPage: React.FC = () => {
                                     </div>
                                     <div className="mb-4">
                                         <Input
-                                            {...registerChangePassword("confirmPassword")}
+                                            {...registerChangePassword('confirmPassword')}
                                             type="password"
                                             placeholder="Confirm New Password"
                                             required
                                             className="border rounded-md p-2 w-full"
                                         />
                                     </div>
-                                    <Button type="submit" className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">
+                                    <Button
+                                        type="submit"
+                                        className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700"
+                                    >
                                         Update Password
                                     </Button>
                                 </form>
@@ -110,7 +126,7 @@ const LoginPage: React.FC = () => {
                 </Card>
             </div>
         </div>
-    )
+    );
 };
 
 export default LoginPage;

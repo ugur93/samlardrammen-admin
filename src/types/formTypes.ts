@@ -1,26 +1,41 @@
-import { convertDateStringToOnlyDate } from "../utils/dateutils";
-import { OrganizationDetails, PersonDetails } from "./personTypes";
+import { convertDateStringToOnlyDate } from '../utils/dateutils';
+import { OrganizationDetails, PaymentDetailDatabase, PersonDetails } from './personTypes';
 
-export interface CreateUpdateUserFormFields {
-    id: number | null;
+export interface UserFormFields {
+    id?: number;
     firstname: string;
     lastname: string;
     email: string;
     birthdate: string;
     gender: string;
-    organizations: [],
+    phoneNumber: string;
+    organizations: number[];
 
     address: {
-        id: number | null;
+        id?: number;
         addressLine1?: string;
         addressLine2?: string;
         postcode?: string;
         city?: string;
-    },
+    };
 
-
+    paymenDetails: {
+        membership_id: number;
+        payment_detail_id: number;
+        amount: number;
+        payment_date: string;
+    }[];
 }
 
+export interface CreateOrUpdateUserPaymentDetailsFormFields {
+    id?: number;
+    membership_id: number;
+
+    payment_detail_id: number;
+    amount: number;
+    paymentState: 'paid' | 'unpaid';
+    payment_date?: string | null;
+}
 export interface LoginFormValues {
     email: string;
     password: string;
@@ -32,23 +47,25 @@ export interface ChangePasswordValues {
     confirmPassword: string;
 }
 
-export function mapToFormValues(person?: PersonDetails): CreateUpdateUserFormFields {
+export function mapToFormValues(person?: PersonDetails | null): UserFormFields {
     return {
-        id: person?.person?.id,
+        id: person?.person?.id ?? undefined,
         firstname: person?.person?.firstname || '',
         lastname: person?.person?.lastname || '',
         email: person?.person?.email || '',
         birthdate: convertDateStringToOnlyDate(person?.person?.birthdate) || '',
         gender: person?.person?.gender || '',
+        phoneNumber: person?.person?.phone_number || '',
         address: {
-            id: person?.address?.id,
+            id: person?.address?.id ?? undefined,
             addressLine1: person?.address?.addressLine1 || '',
             addressLine2: person?.address?.addressLine2 || '',
             postcode: person?.address?.postcode || '',
             city: person?.address?.city || '',
         },
-        organizations: [],
-    }
+        organizations: person?.membership?.map((c) => c.membership.organization_id!) || [],
+        paymenDetails: [],
+    };
 }
 
 export interface CreateOrUpdateOrganizationFormFields {
@@ -56,7 +73,6 @@ export interface CreateOrUpdateOrganizationFormFields {
     name: string;
     bank_account_number: string;
     organization_number: string;
-
 }
 
 export interface CreateOrUpdateOrganizationPaymentDetailFormFields {
@@ -65,14 +81,25 @@ export interface CreateOrUpdateOrganizationPaymentDetailFormFields {
     amount: number;
     deadline: string;
     year: number;
-
+}
+export function mapToPaymentDetails(
+    organizationId: number,
+    paymentDetails?: PaymentDetailDatabase
+): CreateOrUpdateOrganizationPaymentDetailFormFields {
+    return {
+        id: paymentDetails?.id ?? undefined,
+        organization_id: organizationId,
+        amount: paymentDetails?.amount ?? 0,
+        deadline: paymentDetails?.payment_deadline ?? '',
+        year: paymentDetails?.year ?? new Date().getFullYear(),
+    };
 }
 
 export function mapToOrganizationFormValues(organization?: OrganizationDetails): CreateOrUpdateOrganizationFormFields {
     return {
-        id: organization?.organization?.id,
+        id: organization?.organization?.id ?? undefined,
         name: organization?.organization?.name || '',
         bank_account_number: organization?.organization?.bank_account_number || '',
         organization_number: organization?.organization?.organization_number || '',
-    }
+    };
 }
