@@ -1,3 +1,5 @@
+import EditIcon from '@mui/icons-material/Edit';
+import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import {
     Button,
     Card,
@@ -16,8 +18,10 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format } from 'date-fns';
-import React, { useState } from 'react';
+import dayjs from 'dayjs';
+import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router';
 import { useAddOrUpdatePaymentStatus, useGetPersonById } from '../api/usePersonsApi';
@@ -25,9 +29,6 @@ import { useAppContext } from '../context/AppContext';
 import { CreateOrUpdateUserPaymentDetailsFormFields, mapToFormValues, UserFormFields } from '../types/formTypes';
 import { MembershipDetails, PaymentDetailDatabase, PersonDetails } from '../types/personTypes';
 import PageTemplate from './PageTemplate';
-
-import EditIcon from '@mui/icons-material/Edit';
-import SaveAltIcon from '@mui/icons-material/SaveAlt';
 export default function UserDetailsPage() {
     return (
         <PageTemplate>
@@ -41,7 +42,6 @@ export const UserDetails: React.FC = () => {
     const userId = useParams<{ id: string }>().id;
     const userDetails = useGetPersonById(userId);
 
-    const [showPaymentDetails, setShowPaymentDetails] = useState<Record<number, boolean>>({});
     const [isEditing, setIsEditing] = useState(false);
     const navigate = useNavigate();
     const { register, handleSubmit, reset } = useForm<UserFormFields>({
@@ -258,10 +258,11 @@ function MembershipDetailsView({ user }: { user: PersonDetails }) {
                                             const userPaymentInfo = membership.paymentDetails.find(
                                                 (pd) => pd.payment_detail_id === payment.id
                                             );
+                                            console.log(userPaymentInfo, payment);
                                             return (
                                                 <TableRow
                                                     key={index}
-                                                    className={`${userPaymentInfo?.payment_state == 'unpaid' ? 'bg-red-100' : ''}`}
+                                                    className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
                                                 >
                                                     <TableCell>{payment.year}</TableCell>
                                                     <TableCell>
@@ -303,7 +304,7 @@ function ViewOrEditPaymentStatus({
     const paid = userPaymentInfo?.payment_state == 'paid';
     console.log('UserPaymentInfo', userPaymentInfo);
     const {
-        register,
+        setError,
         handleSubmit,
         reset,
         control,
@@ -315,14 +316,28 @@ function ViewOrEditPaymentStatus({
             payment_detail_id: paymentDetail.id,
             amount: userPaymentInfo?.amount ?? 0,
             paymentState: userPaymentInfo?.payment_state ?? 'unpaid',
-            payment_date: userPaymentInfo?.payment_date
-                ? format(new Date(userPaymentInfo?.payment_date), 'yyyy-MM-dd')
-                : '',
+            payment_date: userPaymentInfo?.payment_date,
         },
     });
 
+    useEffect(() => {
+        reset({
+            id: userPaymentInfo?.id,
+            membership_id: membership.membership.id,
+            payment_detail_id: paymentDetail.id,
+            amount: userPaymentInfo?.amount ?? 0,
+            paymentState: userPaymentInfo?.payment_state ?? 'unpaid',
+            payment_date: userPaymentInfo?.payment_date,
+        } as CreateOrUpdateUserPaymentDetailsFormFields);
+    }, [userPaymentInfo]);
     function onSave(data: CreateOrUpdateUserPaymentDetailsFormFields) {
         console.log('SUBMIT', data);
+        if (data.paymentState == 'paid') {
+            if (data.payment_date == undefined) {
+                setError('payment_date', { message: 'Betalt dato er påkrevd når status er betalt' });
+                return;
+            }
+        }
         setEditPayment(undefined);
         userPaymentInfoFn.mutateAsync(data).then(() => {
             reset();
@@ -334,16 +349,26 @@ function ViewOrEditPaymentStatus({
             <TableCell>
                 {editPayment != paymentDetail.id ? (
                     <Typography>
-                        {userPaymentInfo?.payment_date
-                            ? format(new Date(userPaymentInfo?.payment_date), 'dd/MM/yyyy')
-                            : ''}
+                        {userPaymentInfo?.payment_date ? dayjs(userPaymentInfo?.payment_date).format('DD/MM/YYYY') : ''}
                     </Typography>
                 ) : (
-                    <TextField
-                        size="small"
-                        type="date"
-                        {...register('payment_date')}
-                        inputProps={{ 'aria-label': 'Without label' }}
+                    <Controller
+                        control={control}
+                        name="payment_date"
+                        render={({ field }) => {
+                            return (
+                                <DatePicker
+                                    value={dayjs(field.value)}
+                                    inputRef={field.ref}
+                                    slotProps={{
+                                        textField: { size: 'small', helperText: errors.payment_date?.message },
+                                    }}
+                                    onChange={(date) => {
+                                        field.onChange(date);
+                                    }}
+                                />
+                            );
+                        }}
                     />
                 )}
             </TableCell>
@@ -362,8 +387,8 @@ function ViewOrEditPaymentStatus({
                                     displayEmpty
                                     inputProps={{ 'aria-label': 'Without label' }}
                                 >
-                                    <MenuItem value={'unpaid'}>Ødemedi</MenuItem>
-                                    <MenuItem value={'paid'}>Ødendi</MenuItem>
+                                    <MenuItem value={'unpaid'}>Ikke betalt</MenuItem>
+                                    <MenuItem value={'paid'}>Betalt</MenuItem>
                                 </Select>
                             )}
                         />

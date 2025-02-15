@@ -1,15 +1,9 @@
-import {
-    AppBar,
-    Box,
-    Button,
-    CircularProgress,
-    Container,
-    Link,
-    Toolbar,
-    Typography
-} from '@mui/material';
+import { AppBar, Box, Button, CircularProgress, Container, Link, Toolbar, Typography } from '@mui/material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider/LocalizationProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import 'dayjs/locale/en-gb';
 import { PropsWithChildren, Suspense } from 'react';
 import { useNavigate } from 'react-router';
 import { useLogout } from '../api/usePersonsApi';
@@ -27,14 +21,16 @@ export const queryClient = new QueryClient({
 export default function PageTemplate({ children }: PropsWithChildren<unknown>) {
     return (
         <QueryClientProvider client={queryClient}>
-            <AppContextProvider>
-                <Box sx={{ flexGrow: 1 }}>
-                    <CustomAppBar />
-                    <Box>
-                        <Suspense fallback={<CircularProgress />}>{children}</Suspense>
+            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'en-gb'}>
+                <AppContextProvider>
+                    <Box sx={{ flexGrow: 1 }}>
+                        <CustomAppBar />
+                        <Box>
+                            <Suspense fallback={<CircularProgress />}>{children}</Suspense>
+                        </Box>
                     </Box>
-                </Box>
-            </AppContextProvider>
+                </AppContextProvider>
+            </LocalizationProvider>
             <ReactQueryDevtools />
         </QueryClientProvider>
     );

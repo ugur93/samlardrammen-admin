@@ -69,7 +69,8 @@ export function mapToFormValues(person?: PersonDetails | null): UserFormFields {
 }
 
 export interface CreateOrUpdateOrganizationFormFields {
-    id: number | null;
+    orgId?: number | null;
+    editMode?: boolean;
     name: string;
     bank_account_number: string;
     organization_number: string;
@@ -97,7 +98,8 @@ export function mapToPaymentDetails(
 
 export function mapToOrganizationFormValues(organization?: OrganizationDetails): CreateOrUpdateOrganizationFormFields {
     return {
-        id: organization?.organization?.id ?? undefined,
+        orgId: organization?.organization?.id ?? undefined,
+        editMode: false,
         name: organization?.organization?.name || '',
         bank_account_number: organization?.organization?.bank_account_number || '',
         organization_number: organization?.organization?.organization_number || '',

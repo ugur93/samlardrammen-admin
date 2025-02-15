@@ -24,3 +24,13 @@ export interface OrganizationDetails {
     organization: OrganizationsDatabase;
     paymentDetails: PaymentDetailDatabase[];
 }
+
+export function genderVisningsnavn(gender: PersonDetails): string {
+    switch (gender.person.gender) {
+        case 'male':
+            return 'Mann';
+        case 'women':
+            return 'Kvinne';
+    }
+    return 'Ukjent';
+}

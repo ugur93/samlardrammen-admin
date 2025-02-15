@@ -1,12 +1,11 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import supabase from '../supabase';
-import { OrganizationDetails, OrganizationsDatabase, PaymentDetailDatabase, PersonDetails } from '../types/personTypes';
+import { Database } from '../types/database.types';
 import {
     CreateOrUpdateOrganizationFormFields,
     CreateOrUpdateOrganizationPaymentDetailFormFields,
-    UserFormFields,
 } from '../types/formTypes';
-import { Database } from '../types/database.types';
+import { OrganizationDetails } from '../types/personTypes';
 
 export const QueryKeys = {
     fetchOrganizations: ['organizations'],
@@ -71,13 +70,13 @@ export function useCreateOrganizationApi() {
         mutationFn: async (org: CreateOrUpdateOrganizationFormFields) => {
             const orgRef = supabase.from('organization');
             const organizationDbData = {
-                id: org.id ?? undefined,
+                id: org.orgId ?? undefined,
                 name: org.name,
                 bank_account_number: org.bank_account_number,
                 organization_number: org.organization_number,
             };
             console.log(organizationDbData);
-            const result = org.id
+            const result = org.orgId
                 ? await orgRef.upsert(organizationDbData).select()
                 : await orgRef.insert([organizationDbData], { defaultToNull: false }).select();
 

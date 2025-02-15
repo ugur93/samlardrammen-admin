@@ -144,24 +144,26 @@ export function useCreatePersonMutation() {
 
             if (result.error) throw new Error(result.error.message);
 
-            // const address = person.address
-            // const resultaddress = await supabase
-            //     .from('address')
-            //     .insert([{
-            //         id: address.id ?? undefined,
-            //         person_id: result.data[0].id,
-            //         addressLine1: address.addressLine1,
-            //         addressLine2: address.addressLine2,
-            //         postcode: address.postcode,
-            //         city: address.city
-            //     }]);
-
-            // if (resultaddress.error) throw new Error(resultaddress.error.message);
-            const resultorgs = await supabase.from('membership').upsert(
-                person.organizations.map((organization_id) => ({
+            const address = person.address;
+            const resultaddress = await supabase.from('address').insert([
+                {
                     person_id: result.data[0].id,
-                    organization_id: organization_id,
-                }))
+                    addressLine1: address.addressLine1,
+                    addressLine2: address.addressLine2,
+                    postcode: address.postcode,
+                    city: address.city,
+                },
+            ]);
+
+            if (resultaddress.error) throw new Error(resultaddress.error.message);
+            const resultorgs = await supabase.from('membership').upsert(
+                person.organizations.map(
+                    (organization_id) => ({
+                        person_id: result.data[0].id,
+                        organization_id: organization_id,
+                    }),
+                    { onConflict: 'organization_id' }
+                )
             );
             if (resultorgs.error) throw new Error(resultorgs.error.message);
 

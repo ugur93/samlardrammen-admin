@@ -2,7 +2,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import {
     Box,
     Button,
-    Checkbox,
     Chip,
     Container,
     Dialog,
@@ -28,16 +27,16 @@ import {
     TableHead,
     TableRow,
     TextField,
-    Typography
+    Typography,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { useGetAllUsers } from '../api/useAdminApi';
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useCreatePersonMutation, useGetPersons } from '../api/usePersonsApi';
-import supabase from '../supabase';
-import { UserFormFields, mapToFormValues } from '../types/formTypes';
-import { PersonDatabase, PersonDetails } from '../types/personTypes';
+import { mapToFormValues, UserFormFields } from '../types/formTypes';
+import { genderVisningsnavn, PersonDetails } from '../types/personTypes';
+import { isStringEmpty } from '../utils/stringutils';
 import PageTemplate from './PageTemplate';
 export default function AdminPage() {
     return (
@@ -104,7 +103,31 @@ const UsersTable: React.FC = () => {
 const MembersTable: React.FC = () => {
     // React Query to fetch data
     const data = useGetPersons();
+    const createPersonFn = useCreatePersonMutation();
+    const [editableRow, setEditableRow] = useState<`users.${number}` | undefined>(undefined);
+
     const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean>(false);
+
+    const methods = useForm<{ users: UserFormFields[] }>({
+        defaultValues: {
+            users: data.map(mapToFormValues),
+        },
+    });
+    const { reset, control, setError, getValues } = methods;
+    const fields = useFieldArray({ name: 'users', control });
+    const onSubmit = async (index: number) => {
+        const data = getValues(`users.${index}`);
+
+        if (isStringEmpty(data.firstname)) {
+            setError(`users.${index}.firstname`, { message: 'Feltet er påkrevd' });
+            return;
+        }
+        createPersonFn.mutate(data);
+        setEditableRow(undefined);
+    };
+    useEffect(() => {
+        reset({ users: data.map(mapToFormValues) });
+    }, [data]);
 
     return (
         <Container sx={{ mt: 4 }}>
@@ -121,6 +144,8 @@ const MembersTable: React.FC = () => {
                             <TableCell>Navn</TableCell>
                             <TableCell>Alder</TableCell>
                             <TableCell>Email</TableCell>
+                            <TableCell>Kjønn</TableCell>
+                            <TableCell>Medlemskap</TableCell>
                             <TableCell></TableCell>
                         </TableRow>
                     </TableHead>
@@ -138,6 +163,10 @@ const MembersTable: React.FC = () => {
                                         : '-'}
                                 </TableCell>
                                 <TableCell>{personDetails.person.email}</TableCell>
+                                <TableCell>{genderVisningsnavn(personDetails)}</TableCell>
+                                <TableCell>
+                                    {personDetails.membership?.map((d) => d.organization.organization.name).join(', ')}
+                                </TableCell>
                                 <TableCell>
                                     <IconButton onClick={() => setCreateOrEdit(personDetails)}>
                                         <EditIcon />
@@ -157,52 +186,6 @@ const MembersTable: React.FC = () => {
                 />
             )}
         </Container>
-    );
-};
-
-interface PersonDetailDialogProps {
-    open: boolean;
-    user: PersonDatabase;
-    onClose: () => void;
-    refetch: () => void;
-}
-const PersonDetailDialog: React.FC<PersonDetailDialogProps> = ({ open, user, onClose, refetch }) => {
-    const [paymentStatus, setPaymentStatus] = useState<boolean>((user as any).paid || false);
-
-    useEffect(() => {
-        setPaymentStatus((user as any).paid || false);
-    }, [user]);
-
-    const handlePaymentUpdate = async () => {
-        const { error } = await supabase.from('person').update({ paid: paymentStatus }).eq('id', user.id);
-        if (error) {
-            alert(error.message);
-        } else {
-            onClose();
-            refetch();
-        }
-    };
-
-    return (
-        <Dialog open={open} onClose={onClose}>
-            <DialogTitle>User Details</DialogTitle>
-            <DialogContent>
-                <TextField margin="dense" label="ID" fullWidth value={user.id} disabled />
-                <TextField margin="dense" label="First Name" fullWidth value={user.firstname} disabled />
-                <TextField margin="dense" label="Last Name" fullWidth value={user.lastname} disabled />
-                <TextField margin="dense" label="Email" fullWidth value={user.email} disabled />
-                <FormControlLabel
-                    control={<Checkbox checked={paymentStatus} onChange={(e) => setPaymentStatus(e.target.checked)} />}
-                    label="Payment Made"
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handlePaymentUpdate} variant="contained">
-                    Update Payment Status
-                </Button>
-            </DialogActions>
-        </Dialog>
     );
 };
 
@@ -226,7 +209,6 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
         handleSubmit,
         reset,
         formState: { errors },
-        setValue,
         control,
         getValues,
         watch,
