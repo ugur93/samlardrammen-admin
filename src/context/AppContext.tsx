@@ -1,8 +1,8 @@
 import { User } from '@supabase/supabase-js';
-import { createContext, ReactNode, useState, useContext, useEffect } from 'react';
-import { PersonDetails } from '../types/personTypes';
-import { useLoggedInUser } from '../api/usePersonsApi';
+import { createContext, ReactNode, useContext, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { useLoggedInUser } from '../api/usePersonsApi';
+import { PersonDetails } from '../types/personTypes';
 
 export interface LoggedInUser {
     user: User;
@@ -32,24 +32,25 @@ interface PageDetail {
     roles: string[];
     label: string;
 }
+const base = '/samlardrammen-admin';
 
 const defaultPages = { admin: 'user-admin', user: 'user' } as Record<string, string>;
 const pages: PageDetail[] = [
     {
         name: 'user',
-        url: '/user',
+        url: `${base}/user`,
         roles: ['user'],
         label: 'User',
     },
     {
         name: 'user-admin',
-        url: '/user-admin',
+        url: `${base}/user-admin`,
         roles: ['admin'],
         label: 'Uyeler',
     },
     {
         name: 'organizations',
-        url: '/organizations',
+        url: `${base}/organizations`,
         roles: ['admin'],
         label: 'Dernekler',
     },
