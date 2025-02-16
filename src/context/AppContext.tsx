@@ -64,7 +64,7 @@ export const AppContextProvider: React.FC<AppContextProviderProps> = ({ children
     const navigate = useNavigate();
     const location = useLocation();
 
-    if (loggedInUser == null && location.pathname !== '/login') {
+    if (loggedInUser == null && location.pathname.includes('login') == false) {
         navigate('/login');
         return null;
     }
