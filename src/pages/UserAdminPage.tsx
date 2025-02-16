@@ -2,6 +2,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import {
     Box,
     Button,
+    Checkbox,
     Chip,
     Container,
     Dialog,
@@ -14,6 +15,7 @@ import {
     IconButton,
     InputLabel,
     Link,
+    ListItemText,
     MenuItem,
     OutlinedInput,
     Paper,
@@ -31,7 +33,6 @@ import {
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { useGetAllUsers } from '../api/useAdminApi';
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useCreatePersonMutation, useGetPersons } from '../api/usePersonsApi';
 import { mapToFormValues, UserFormFields } from '../types/formTypes';
@@ -45,57 +46,13 @@ export default function AdminPage() {
     );
 }
 
-type UseradminTabs = 'members' | 'users';
 export const UserAdminPage: React.FC = () => {
-    const [tab, setTab] = React.useState<UseradminTabs>();
-
-    const handleChange = (event: React.SyntheticEvent, newValue: UseradminTabs) => {
-        setTab(newValue);
-    };
     return (
         <PageTemplate>
             <Box sx={{ width: '100%', bgcolor: 'background.paper' }}>
-                {/* <Tabs value={tab} onChange={handleChange} centered>
-        <Tab value={"users"} label="Uyeler" />
-        <Tab value="members" label="Kunlanicilar" />
-      </Tabs>
-      {tab === "members" && <MembersTable />}
-      {tab === "users" && <UsersTable />} */}
                 <MembersTable />
             </Box>
         </PageTemplate>
-    );
-};
-// Type Definition for Person
-
-const UsersTable: React.FC = () => {
-    const users = useGetAllUsers();
-
-    console.log(users);
-
-    return (
-        <Container sx={{ mt: 4 }}>
-            <Typography variant="h4" gutterBottom color="black">
-                Kullanıcılar
-            </Typography>
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Email</TableCell>
-                            <TableCell></TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {users?.map((user) => (
-                            <TableRow key={user.id}>
-                                <TableCell>{user.email}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-        </Container>
     );
 };
 
@@ -274,7 +231,7 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
                                     labelId="organizations-label"
                                     multiple
                                     value={organizations}
-                                    input={<OutlinedInput label="Organizations" />}
+                                    input={<OutlinedInput label="Medlemskap" />}
                                     renderValue={(organization) => (
                                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                             {organization?.map((value) => {
@@ -286,7 +243,8 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
                                 >
                                     {organizationsList.map((org) => (
                                         <MenuItem key={org.id} value={org.id}>
-                                            {org.name}
+                                            <Checkbox checked={organizations.includes(org.id)} />
+                                            <ListItemText primary={org.name} />
                                         </MenuItem>
                                     ))}
                                 </Select>
