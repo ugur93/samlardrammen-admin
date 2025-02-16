@@ -139,13 +139,20 @@ export function useCreatePersonMutation() {
     const qc = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ person, existingPerson }: { person: UserFormFields; existingPerson?: PersonDetails }) => {
+        mutationFn: async ({
+            person,
+            existingPerson,
+        }: {
+            person: UserFormFields;
+            existingPerson?: PersonDetails | null;
+        }) => {
             const personRef = supabase.from('person');
             const personDbData = {
                 id: person.id ?? undefined,
                 firstname: person.firstname,
                 lastname: person.lastname,
                 email: person.email,
+                phone_number: person.phoneNumber,
                 gender: person.gender,
                 birthdate: person.birthdate,
             };
@@ -154,6 +161,7 @@ export function useCreatePersonMutation() {
                 : await personRef.insert([personDbData]).select();
 
             if (result.error) throw new Error(result.error.message);
+            const personId = result.data[0].id;
 
             const address = person.address;
             const resultaddress = await supabase.from('address').insert([
@@ -166,15 +174,16 @@ export function useCreatePersonMutation() {
                 },
             ]);
 
-            await updateMembership(result.data[0].id, person, existingPerson);
+            await updateMembership(personId, person, existingPerson);
             if (resultaddress.error) throw new Error(resultaddress.error.message);
 
-            qc.refetchQueries({ queryKey: QueryKeys.fetchPersons });
+            await qc.resetQueries({ queryKey: QueryKeys.fetchPersonById(personId.toString()) });
+            await qc.refetchQueries({ queryKey: QueryKeys.fetchPersons });
         },
     });
 }
 
-async function updateMembership(personId: number, personForm: UserFormFields, existingPerson?: PersonDetails) {
+async function updateMembership(personId: number, personForm: UserFormFields, existingPerson?: PersonDetails | null) {
     const removeMembership = existingPerson?.membership?.filter(
         (membership) => !personForm.organizations.includes(membership.membership.organization_id!)
     );
@@ -184,7 +193,9 @@ async function updateMembership(personId: number, personForm: UserFormFields, ex
     }
 
     const addMembership = personForm.organizations.filter(
-        (d) => !existingPerson?.membership?.some((m) => m.membership.organization_id == d)
+        (d) =>
+            !existingPerson?.membershipRemoved?.some((m) => m.membership.organization_id == d) &&
+            !existingPerson?.membership?.some((m) => m.membership.organization_id == d)
     );
 
     if (addMembership.length > 0) {
@@ -201,7 +212,7 @@ async function updateMembership(personId: number, personForm: UserFormFields, ex
     }
 
     const updateMembership =
-        existingPerson?.membership?.filter(
+        existingPerson?.membershipRemoved?.filter(
             (membership) =>
                 personForm.organizations.includes(membership.membership.organization_id!) &&
                 !membership.membership.is_member
@@ -212,6 +223,7 @@ async function updateMembership(personId: number, personForm: UserFormFields, ex
         await supabase.from('membership').upsert(
             updateMembership.map((membership) => ({
                 id: membership.membership.id,
+                is_member: true,
                 person_id: personId,
                 organization_id: membership.membership.organization_id,
             }))

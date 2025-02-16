@@ -16,7 +16,7 @@ const fetchOrganizations = async (): Promise<OrganizationDetails[]> => {
     if (error) throw new Error(error.message);
     return data.map((organization) => ({
         organization: organization,
-        paymentDetails: organization.payment_detail,
+        paymentDetails: organization.payment_detail.filter((pd) => !pd.deleted),
     }));
 };
 const fetchOrganizationById = async (id: string): Promise<OrganizationDetails> => {
@@ -28,7 +28,7 @@ const fetchOrganizationById = async (id: string): Promise<OrganizationDetails> =
     if (error) throw new Error(error.message);
     return {
         organization: organization,
-        paymentDetails: organization.payment_detail,
+        paymentDetails: organization.payment_detail.filter((pd) => !pd.deleted),
     };
 };
 export function useGetOrganization(id: string) {
@@ -93,11 +93,13 @@ export function useDeletePaymentDetailsApi() {
         mutationFn: async ({ paymentId, organizationId }: { paymentId: number; organizationId: number }) => {
             const orgRef = supabase.from('payment_detail');
 
-            const result = await orgRef.delete().eq('id', paymentId);
+            const resultDelete = await orgRef.delete().eq('id', paymentId);
 
-            if (result.error) throw new Error(result.error.message);
+            if (resultDelete.status === 409) {
+                await orgRef.update({ deleted: true }).eq('id', paymentId);
+            }
 
-            qc.refetchQueries({ queryKey: QueryKeys.fetchOrganizationById(organizationId) });
+            qc.refetchQueries({ queryKey: QueryKeys.fetchOrganizationById(organizationId.toString()) });
         },
     });
 }
@@ -121,7 +123,7 @@ export function useCreatePaymentDetailApi() {
 
             if (result.error) throw new Error(result.error.message);
 
-            qc.refetchQueries({ queryKey: QueryKeys.fetchOrganizationById(payment.organization_id) });
+            qc.refetchQueries({ queryKey: QueryKeys.fetchOrganizationById(payment.organization_id.toString()) });
         },
     });
 }

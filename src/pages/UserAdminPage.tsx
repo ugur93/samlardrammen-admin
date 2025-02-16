@@ -31,10 +31,11 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import React, { useState } from 'react';
+import { Controller, FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useCreatePersonMutation, useGetPersons } from '../api/usePersonsApi';
+import { FormDatePicker } from '../components/FormDatePicker';
 import { base } from '../context/AppContext';
 import { mapToFormValues, UserFormFields } from '../types/formTypes';
 import { genderVisningsnavn, PersonDetails } from '../types/personTypes';
@@ -63,17 +64,13 @@ const MembersTable: React.FC = () => {
     useGetOrganizations();
     const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean>(false);
 
-    useEffect(() => {
-        //reset({ users: data.map(mapToFormValues) });
-    }, [data]);
-
     return (
         <Container sx={{ mt: 4 }}>
             <Typography variant="h4" gutterBottom color="black">
-                Uyeler
+                Medlemmer
             </Typography>
             <Button variant="contained" color="primary" onClick={() => setCreateOrEdit(true)} sx={{ mb: 2 }}>
-                Opprett bruker
+                Legg til medlem
             </Button>
             <TableContainer component={Paper}>
                 <Table>
@@ -141,7 +138,9 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
     }));
 
     const createPersonFn = useCreatePersonMutation();
-    console.log(person);
+    const methods = useForm<UserFormFields>({
+        defaultValues: mapToFormValues(person),
+    });
     const {
         register,
         handleSubmit,
@@ -149,9 +148,7 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
         formState: { errors },
         control,
         watch,
-    } = useForm<UserFormFields>({
-        defaultValues: mapToFormValues(person),
-    });
+    } = methods;
 
     const onSubmit: SubmitHandler<UserFormFields> = async (data) => {
         console.log('SUBMITTING', data);
@@ -163,103 +160,114 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
 
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Yeni üye ekle</DialogTitle>
+            <DialogTitle>{person ? 'Oppdater medlem' : 'Legg til medlem'} </DialogTitle>
             <DialogContent>
-                <form id="create-user-form" onSubmit={handleSubmit(onSubmit)}>
-                    <TextField
-                        margin="dense"
-                        label="İsim"
-                        fullWidth
-                        {...register('firstname', { required: 'İsim yazılması lazım' })}
-                        error={Boolean(errors.firstname)}
-                        helperText={errors.firstname?.message}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Soy isim"
-                        fullWidth
-                        {...register('lastname', { required: 'Last name is required' })}
-                        error={Boolean(errors.lastname)}
-                        helperText={errors.lastname?.message}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Email"
-                        fullWidth
-                        {...register('email', {
-                            required: 'Email is required',
-                            pattern: {
-                                value: /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/,
-                                message: 'Invalid email address',
-                            },
-                        })}
-                        error={Boolean(errors.email)}
-                        helperText={errors.email?.message}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Doğum Tarihi"
-                        type="date"
-                        fullWidth
-                        InputLabelProps={{ shrink: true }}
-                        {...register('birthdate', { required: 'Birthdate is required' })}
-                        error={Boolean(errors.birthdate)}
-                        helperText={errors.birthdate?.message}
-                    />
-                    <FormControl component="fieldset" margin="dense" sx={{ mt: 2 }} error={Boolean(errors.gender)}>
-                        <FormLabel component="legend">Cinsiyet</FormLabel>
-                        <Controller
-                            rules={{ required: true }}
-                            control={control}
-                            name="gender"
-                            render={({ field }) => (
-                                <RadioGroup row {...field}>
-                                    <FormControlLabel value="male" control={<Radio />} label="Erker" />
-                                    <FormControlLabel value="female" control={<Radio />} label="Kadin" />
-                                </RadioGroup>
-                            )}
+                <FormProvider {...methods}>
+                    <form id="create-user-form" onSubmit={handleSubmit(onSubmit)}>
+                        <TextField
+                            margin="dense"
+                            label="Fornavn"
+                            fullWidth
+                            {...register('firstname', { required: 'Navn er påkrevd' })}
+                            error={Boolean(errors.firstname)}
+                            helperText={errors.firstname?.message}
                         />
-                        {errors.gender && <p style={{ color: 'red' }}>{errors.gender.message}</p>}
-                    </FormControl>
-                    <FormControl fullWidth margin="dense" sx={{ mt: 2 }}>
-                        <InputLabel id="organizations-label">Organizations</InputLabel>
-                        <Controller
-                            control={control}
-                            name="organizations"
-                            render={({ field }) => (
-                                <Select
-                                    {...field}
-                                    labelId="organizations-label"
-                                    multiple
-                                    value={organizations}
-                                    input={<OutlinedInput label="Medlemskap" />}
-                                    renderValue={(organization) => (
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {organization?.map((value) => {
-                                                const org = organizationsList.find((org) => org.id === value);
-                                                return <Chip key={value} label={org?.name || value} />;
-                                            })}
-                                        </Box>
-                                    )}
-                                >
-                                    {organizationsList.map((org) => (
-                                        <MenuItem key={org.id} value={org.id}>
-                                            <Checkbox checked={organizations.includes(org.id)} />
-                                            <ListItemText primary={org.name} />
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            )}
+                        <TextField
+                            margin="dense"
+                            label="Etternavn"
+                            fullWidth
+                            {...register('lastname', { required: 'Etternavn er påkrevd' })}
+                            error={Boolean(errors.lastname)}
+                            helperText={errors.lastname?.message}
                         />
-                    </FormControl>
-                    <FormLabel component="legend">Ev addressi (opsiyonel)</FormLabel>
-                    <Box>
-                        <TextField margin="dense" label="Address 1" fullWidth {...register('address.addressLine1')} />
-                        <TextField margin="dense" label="Address 2" fullWidth {...register('address.addressLine2')} />
-                        <TextField margin="dense" label="Posta kodu" fullWidth {...register('address.postcode')} />
-                        <TextField margin="dense" label="Şehir" fullWidth {...register('address.city')} />
-                    </Box>
-                </form>
+                        <TextField
+                            margin="dense"
+                            label="Telefonnummer"
+                            fullWidth
+                            {...register('phoneNumber')}
+                            error={Boolean(errors.phoneNumber)}
+                            helperText={errors.phoneNumber?.message}
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Email"
+                            fullWidth
+                            {...register('email', {
+                                required: 'Email er påkrevd',
+                                pattern: {
+                                    value: /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/,
+                                    message: 'Invalid email address',
+                                },
+                            })}
+                            error={Boolean(errors.email)}
+                            helperText={errors.email?.message}
+                        />
+                        <FormDatePicker name="birthdate" />
+                        <FormControl component="fieldset" margin="dense" sx={{ mt: 2 }} error={Boolean(errors.gender)}>
+                            <FormLabel component="legend">Kjønn</FormLabel>
+                            <Controller
+                                rules={{ required: true }}
+                                control={control}
+                                name="gender"
+                                render={({ field }) => (
+                                    <RadioGroup row {...field}>
+                                        <FormControlLabel value="male" control={<Radio />} label="Mann" />
+                                        <FormControlLabel value="female" control={<Radio />} label="Kvinne" />
+                                    </RadioGroup>
+                                )}
+                            />
+                            {errors.gender && <p style={{ color: 'red' }}>{errors.gender.message}</p>}
+                        </FormControl>
+                        <FormControl fullWidth margin="dense" sx={{ mt: 2 }}>
+                            <InputLabel id="organizations-label">Medlemskap</InputLabel>
+                            <Controller
+                                control={control}
+                                name="organizations"
+                                render={({ field }) => (
+                                    <Select
+                                        {...field}
+                                        labelId="organizations-label"
+                                        multiple
+                                        value={organizations}
+                                        input={<OutlinedInput label="Medlemskap" />}
+                                        renderValue={(organization) => (
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                {organization?.map((value) => {
+                                                    const org = organizationsList.find((org) => org.id === value);
+                                                    return <Chip key={value} label={org?.name || value} />;
+                                                })}
+                                            </Box>
+                                        )}
+                                    >
+                                        {organizationsList.map((org) => (
+                                            <MenuItem key={org.id} value={org.id}>
+                                                <Checkbox checked={organizations.includes(org.id)} />
+                                                <ListItemText primary={org.name} />
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                )}
+                            />
+                        </FormControl>
+                        <FormLabel component="legend">Addresse (valgfri)</FormLabel>
+                        <Box>
+                            <TextField
+                                margin="dense"
+                                label="Addresselinje 1"
+                                fullWidth
+                                {...register('address.addressLine1')}
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Addresselinje 2"
+                                fullWidth
+                                {...register('address.addressLine2')}
+                            />
+                            <TextField margin="dense" label="Postkode" fullWidth {...register('address.postcode')} />
+                            <TextField margin="dense" label="By" fullWidth {...register('address.city')} />
+                        </Box>
+                    </form>
+                </FormProvider>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Avbryt</Button>

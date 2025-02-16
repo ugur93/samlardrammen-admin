@@ -114,6 +114,7 @@ export type Database = {
         Row: {
           amount: number | null
           created_at: string
+          deleted: boolean
           id: number
           organization_id: number | null
           payment_deadline: string | null
@@ -122,6 +123,7 @@ export type Database = {
         Insert: {
           amount?: number | null
           created_at?: string
+          deleted?: boolean
           id?: number
           organization_id?: number | null
           payment_deadline?: string | null
@@ -130,6 +132,7 @@ export type Database = {
         Update: {
           amount?: number | null
           created_at?: string
+          deleted?: boolean
           id?: number
           organization_id?: number | null
           payment_deadline?: string | null

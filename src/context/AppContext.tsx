@@ -46,13 +46,13 @@ const pages: PageDetail[] = [
         name: 'user-admin',
         url: `/user-admin`,
         roles: ['admin'],
-        label: 'Uyeler',
+        label: 'Medlemmer',
     },
     {
         name: 'organizations',
         url: `/organizations`,
         roles: ['admin'],
-        label: 'Dernekler',
+        label: 'Organisasjoner',
     },
 ];
 

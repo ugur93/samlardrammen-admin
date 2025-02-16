@@ -52,7 +52,6 @@ function CustomAppBar() {
                             display: { xs: 'none', md: 'flex' },
                             fontFamily: 'sans-serif',
                             fontWeight: 700,
-                            letterSpacing: '.3rem',
                             color: 'inherit',
                             textDecoration: 'none',
                         }}
@@ -62,7 +61,11 @@ function CustomAppBar() {
 
                     <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
                         {pages.map((page) => (
-                            <Button sx={{ my: 2, color: 'white', display: 'block' }} onClick={() => navigate(page.url)}>
+                            <Button
+                                key={page.label}
+                                sx={{ my: 2, color: 'white', display: 'block' }}
+                                onClick={() => navigate(page.url)}
+                            >
                                 {page.label}
                             </Button>
                         ))}

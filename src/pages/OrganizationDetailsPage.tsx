@@ -22,14 +22,22 @@ import {
     Typography,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { User } from '@supabase/supabase-js';
-import { useMutation } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useParams } from 'react-router';
-import { useCreatePaymentDetailApi, useDeletePaymentDetailsApi, useGetOrganization } from '../api/useOrganizationsApi';
-import { CreateOrUpdateOrganizationPaymentDetailFormFields, mapToPaymentDetails } from '../types/formTypes';
+import {
+    useCreateOrganizationApi,
+    useCreatePaymentDetailApi,
+    useDeletePaymentDetailsApi,
+    useGetOrganization,
+} from '../api/useOrganizationsApi';
+import {
+    CreateOrUpdateOrganizationFormFields,
+    CreateOrUpdateOrganizationPaymentDetailFormFields,
+    mapToOrganizationFormValues,
+    mapToPaymentDetails,
+} from '../types/formTypes';
 import { PaymentDetailDatabase } from '../types/personTypes';
 import PageTemplate from './PageTemplate';
 
@@ -51,28 +59,18 @@ const OrganizationDetailsView: React.FC = () => {
     // const { register, handleSubmit, reset } = useForm<User>({ defaultValues: mockUser });
     const [createOrEdit, setCreateOrEdit] = useState<PaymentDetailDatabase | boolean>(false);
     const [deleteOrganization, setDeletePayment] = useState<PaymentDetailDatabase>();
-    const mutation = useMutation({
-        mutationFn: (updatedUser: User) => {
-            return new Promise<void>((resolve) => {
-                setTimeout(() => {
-                    console.log('Updated user information', updatedUser);
-                    resolve();
-                }, 1000);
-            });
-        },
-    });
+    const createOrUpdateOrganizationFn = useCreateOrganizationApi();
 
-    const onSubmit = (data: User) => {
-        mutation.mutate(data, {
-            onSuccess: () => {
-                setIsEditing(false);
-            },
-        });
+    const { handleSubmit, register } = useForm<CreateOrUpdateOrganizationFormFields>({
+        defaultValues: mapToOrganizationFormValues(organization),
+    });
+    const onSubmit = (data: CreateOrUpdateOrganizationFormFields) => {
+        createOrUpdateOrganizationFn.mutate(data);
+        setIsEditing(false);
     };
 
     const handleEditClick = () => {
         setIsEditing(true);
-        // reset(mockUser);
     };
     return (
         <Container className="p-6 flex justify-center">
@@ -81,7 +79,7 @@ const OrganizationDetailsView: React.FC = () => {
                     <h1 className="text-2xl font-bold">{organization.organization.name}</h1>
                     {!isEditing && (
                         <Button className="bg-white text-blue-600" onClick={handleEditClick}>
-                            Update Information
+                            Oppdater informasjon
                         </Button>
                     )}
                 </header>
@@ -90,20 +88,24 @@ const OrganizationDetailsView: React.FC = () => {
                     <CardContent>
                         {isEditing ? (
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 flex flex-col gap-4">
-                                {/* <TextField size="small" label="Isim" {...register("firstname")} placeholder="Isim" className="border p-2 w-full" />
-                <TextField size="small" label="Soy isim" {...register("lastname")} placeholder="Soyisim" className="border p-2 w-full mt-2" />
-                <TextField size="small" label="Dogum tarihi" type="date" {...register("birthdate")} className="border p-2 w-full" />
-                <TextField size="small" label="Epost" type="email" {...register("email")} className="border p-2 w-full" />
-                <TextField size="small" label="Telefon" type="text" {...register("phoneNumber")} className="border p-2 w-full" />
-                <div>
-                  <InputLabel className="pb-5">Address:</InputLabel>
-                  <div className="flex flex-col gap-4">
-                    <TextField size="small" label="Adress" {...register("address.street")} placeholder="Street" className="border p-2 w-full" />
-                    <TextField size="small" label="Sehir" {...register("address.city")} placeholder="City" className="border p-2 w-full mt-2" />
-                    <TextField size="small" label="Posta kodu" {...register("address.zipCode")} placeholder="Zip Code" className="border p-2 w-full mt-2" />
-                  </div>
-                </div>
-                <Button type="submit" className="bg-blue-600 text-white">Save</Button> */}
+                                <TextField
+                                    size="small"
+                                    label="Organisasjonsnummer"
+                                    {...register('organization_number')}
+                                    placeholder="Organisasjonsnummer"
+                                    className="border p-2 w-full"
+                                />
+                                <TextField
+                                    size="small"
+                                    label="Kontonummer"
+                                    {...register('bank_account_number')}
+                                    placeholder="Kontonummer"
+                                    className="border p-2 w-full mt-2"
+                                />
+
+                                <Button type="submit" className="bg-blue-600 text-white">
+                                    Lagre
+                                </Button>
                             </form>
                         ) : (
                             <>
@@ -120,7 +122,7 @@ const OrganizationDetailsView: React.FC = () => {
                 </Card>
                 <Card>
                     <Button variant="contained" color="primary" onClick={() => setCreateOrEdit(true)} sx={{ mb: 2 }}>
-                        Yeni ødeme ekle
+                        Legg til ny betaling
                     </Button>
                     <TableContainer component={Paper}>
                         <Table>

@@ -69,7 +69,7 @@ const OrganizationsTable: React.FC = () => {
         <FormProvider {...methods}>
             <Container sx={{ mt: 4 }}>
                 <Typography variant="h4" gutterBottom color="black">
-                    Dernekler
+                    Organisasjoner
                 </Typography>
                 <Button
                     variant="contained"
@@ -80,7 +80,7 @@ const OrganizationsTable: React.FC = () => {
                     }}
                     sx={{ mb: 2 }}
                 >
-                    Yeni dernek ekle
+                    Legg til ny organisasjon
                 </Button>
                 <TableContainer component={Paper}>
                     <Table>
