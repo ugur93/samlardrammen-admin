@@ -41,7 +41,7 @@ jobs:
           cache: 'npm'
       - name: Create .env file
         run: |
-          echo "VITE_SUPABASE_URL=${{ env.SUPABASE_URL }}" > .env
+          echo "VITE_SUPABASE_URL=${{ env.SUPABASE_URL }}" >> .env
           echo "VITE_SUPABASE_ANON_KEY=${{ env.SUPABASE_ANON_KEY }}" >> .env
       - name: Install dependencies
         run: yarn install --frozen-lockfile
