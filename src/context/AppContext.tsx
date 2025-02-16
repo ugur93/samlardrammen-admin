@@ -32,25 +32,25 @@ interface PageDetail {
     roles: string[];
     label: string;
 }
-export const base = '/samlardrammen-admin';
+export const base = '/samlardrammen-admin/#';
 
 const defaultPages = { admin: 'user-admin', user: 'user' } as Record<string, string>;
 const pages: PageDetail[] = [
     {
         name: 'user',
-        url: `${base}/user`,
+        url: `/user`,
         roles: ['user'],
         label: 'User',
     },
     {
         name: 'user-admin',
-        url: `${base}/user-admin`,
+        url: `/user-admin`,
         roles: ['admin'],
         label: 'Uyeler',
     },
     {
         name: 'organizations',
-        url: `${base}/organizations`,
+        url: `/organizations`,
         roles: ['admin'],
         label: 'Dernekler',
     },
