@@ -11,6 +11,7 @@ export interface PersonDetails {
     person: PersonDatabase;
     address?: AdressDatabase;
     membership?: MembershipDetails[];
+    membershipRemoved?: MembershipDetails[];
     name: string;
 }
 
@@ -29,7 +30,7 @@ export function genderVisningsnavn(gender: PersonDetails): string {
     switch (gender.person.gender) {
         case 'male':
             return 'Mann';
-        case 'women':
+        case 'female':
             return 'Kvinne';
     }
     return 'Ukjent';

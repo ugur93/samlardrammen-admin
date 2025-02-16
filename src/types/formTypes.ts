@@ -63,7 +63,8 @@ export function mapToFormValues(person?: PersonDetails | null): UserFormFields {
             postcode: person?.address?.postcode || '',
             city: person?.address?.city || '',
         },
-        organizations: person?.membership?.map((c) => c.membership.organization_id!) || [],
+        organizations:
+            person?.membership?.filter((m) => m.membership.is_member).map((c) => c.membership.organization_id!) || [],
         paymenDetails: [],
     };
 }

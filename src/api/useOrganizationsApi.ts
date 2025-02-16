@@ -33,7 +33,7 @@ const fetchOrganizationById = async (id: string): Promise<OrganizationDetails> =
 };
 export function useGetOrganization(id: string) {
     const { data } = useSuspenseQuery<OrganizationDetails, Error>({
-        queryKey: ['organizations', id], // Unique key for the query
+        queryKey: QueryKeys.fetchOrganizationById(id), // Unique key for the query
         queryFn: () => fetchOrganizationById(id), // Function to fetch data
     });
 
@@ -75,7 +75,6 @@ export function useCreateOrganizationApi() {
                 bank_account_number: org.bank_account_number,
                 organization_number: org.organization_number,
             };
-            console.log(organizationDbData);
             const result = org.orgId
                 ? await orgRef.upsert(organizationDbData).select()
                 : await orgRef.insert([organizationDbData], { defaultToNull: false }).select();
@@ -116,7 +115,6 @@ export function useCreatePaymentDetailApi() {
                 payment_deadline: payment.deadline,
                 year: payment.year,
             };
-            console.log(paymentDetailDbData);
             const result = payment.id
                 ? await paymentRef.upsert(paymentDetailDbData).select()
                 : await paymentRef.insert([paymentDetailDbData], { defaultToNull: false }).select();

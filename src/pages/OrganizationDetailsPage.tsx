@@ -21,11 +21,13 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { User } from '@supabase/supabase-js';
 import { useMutation } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import React, { useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { useNavigate, useParams } from 'react-router';
+import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { useParams } from 'react-router';
 import { useCreatePaymentDetailApi, useDeletePaymentDetailsApi, useGetOrganization } from '../api/useOrganizationsApi';
 import { CreateOrUpdateOrganizationPaymentDetailFormFields, mapToPaymentDetails } from '../types/formTypes';
 import { PaymentDetailDatabase } from '../types/personTypes';
@@ -45,9 +47,7 @@ const OrganizationDetailsView: React.FC = () => {
     const organizationId = useParams<{ id: string }>().id;
     const organization = useGetOrganization(organizationId!);
     // React Query to fetch data
-    const [showPaymentDetails, setShowPaymentDetails] = useState<Record<string, boolean>>({});
     const [isEditing, setIsEditing] = useState(false);
-    const navigate = useNavigate();
     // const { register, handleSubmit, reset } = useForm<User>({ defaultValues: mockUser });
     const [createOrEdit, setCreateOrEdit] = useState<PaymentDetailDatabase | boolean>(false);
     const [deleteOrganization, setDeletePayment] = useState<PaymentDetailDatabase>();
@@ -228,6 +228,7 @@ const CreatePaymentDetailnDialog: React.FC<CreateOrganizationDialogProps> = ({
         register,
         handleSubmit,
         reset,
+        control,
         formState: { errors },
     } = useForm<CreateOrUpdateOrganizationPaymentDetailFormFields>({
         defaultValues: mapToPaymentDetails(organizationId, payment),
@@ -261,14 +262,26 @@ const CreatePaymentDetailnDialog: React.FC<CreateOrganizationDialogProps> = ({
                         error={Boolean(errors.amount)}
                         helperText={errors.amount?.message}
                     />
-                    <TextField
-                        margin="dense"
-                        label="Frist"
-                        type="date"
-                        fullWidth
-                        {...register('deadline')}
-                        error={Boolean(errors.deadline)}
-                        helperText={errors.deadline?.message}
+
+                    <Controller
+                        control={control}
+                        name="deadline"
+                        render={({ field }) => {
+                            return (
+                                <DatePicker
+                                    className="!mt-2"
+                                    value={dayjs(field.value)}
+                                    inputRef={field.ref}
+                                    label="Frist"
+                                    slotProps={{
+                                        textField: { size: 'medium', helperText: errors.deadline?.message },
+                                    }}
+                                    onChange={(date) => {
+                                        field.onChange(date);
+                                    }}
+                                />
+                            );
+                        }}
                     />
                 </form>
             </DialogContent>

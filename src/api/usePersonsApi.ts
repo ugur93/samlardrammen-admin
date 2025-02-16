@@ -25,14 +25,26 @@ const fetchPersons = async (): Promise<PersonDetails[]> => {
         (person) =>
             ({
                 person: person,
-                membership: person.membership.map((membership) => ({
-                    membership: membership,
-                    organization: {
-                        organization: membership.organization,
-                        paymentDetails: membership.organization!.payment_detail,
-                    },
-                    paymentDetails: membership.payment_info,
-                })),
+                membership: person.membership
+                    .filter((m) => m.is_member)
+                    .map((membership) => ({
+                        membership: membership,
+                        organization: {
+                            organization: membership.organization,
+                            paymentDetails: membership.organization!.payment_detail,
+                        },
+                        paymentDetails: membership.payment_info,
+                    })),
+                membershipRemoved: person.membership
+                    .filter((m) => !m.is_member)
+                    .map((membership) => ({
+                        membership: membership,
+                        organization: {
+                            organization: membership.organization,
+                            paymentDetails: membership.organization!.payment_detail,
+                        },
+                        paymentDetails: membership.payment_info,
+                    })),
                 address: person.address ? person.address[0] : undefined,
                 name: `${person.firstname} ${person.lastname}`,
             }) as PersonDetails
@@ -127,7 +139,7 @@ export function useCreatePersonMutation() {
     const qc = useQueryClient();
 
     return useMutation({
-        mutationFn: async (person: UserFormFields) => {
+        mutationFn: async ({ person, existingPerson }: { person: UserFormFields; existingPerson?: PersonDetails }) => {
             const personRef = supabase.from('person');
             const personDbData = {
                 id: person.id ?? undefined,
@@ -137,7 +149,6 @@ export function useCreatePersonMutation() {
                 gender: person.gender,
                 birthdate: person.birthdate,
             };
-            console.log(personDbData);
             const result = person.id
                 ? await personRef.upsert(personDbData).select()
                 : await personRef.insert([personDbData]).select();
@@ -155,21 +166,57 @@ export function useCreatePersonMutation() {
                 },
             ]);
 
+            await updateMembership(result.data[0].id, person, existingPerson);
             if (resultaddress.error) throw new Error(resultaddress.error.message);
-            const resultorgs = await supabase.from('membership').upsert(
-                person.organizations.map(
-                    (organization_id) => ({
-                        person_id: result.data[0].id,
-                        organization_id: organization_id,
-                    }),
-                    { onConflict: 'organization_id' }
-                )
-            );
-            if (resultorgs.error) throw new Error(resultorgs.error.message);
 
             qc.refetchQueries({ queryKey: QueryKeys.fetchPersons });
         },
     });
+}
+
+async function updateMembership(personId: number, personForm: UserFormFields, existingPerson?: PersonDetails) {
+    const removeMembership = existingPerson?.membership?.filter(
+        (membership) => !personForm.organizations.includes(membership.membership.organization_id!)
+    );
+    for (const membership of removeMembership ?? []) {
+        console.log('Removing membership for person and organization', personId, membership);
+        await supabase.from('membership').update({ is_member: false }).filter('id', 'eq', membership.membership.id);
+    }
+
+    const addMembership = personForm.organizations.filter(
+        (d) => !existingPerson?.membership?.some((m) => m.membership.organization_id == d)
+    );
+
+    if (addMembership.length > 0) {
+        console.log('Adding membership for person and organizations', personId, addMembership);
+        await supabase.from('membership').upsert(
+            addMembership.map(
+                (organization_id) => ({
+                    person_id: personId,
+                    organization_id: organization_id,
+                }),
+                { onConflict: 'organization_id' }
+            )
+        );
+    }
+
+    const updateMembership =
+        existingPerson?.membership?.filter(
+            (membership) =>
+                personForm.organizations.includes(membership.membership.organization_id!) &&
+                !membership.membership.is_member
+        ) ?? [];
+
+    if (updateMembership.length > 0) {
+        console.log('Enabling membership for person', personId, updateMembership);
+        await supabase.from('membership').upsert(
+            updateMembership.map((membership) => ({
+                id: membership.membership.id,
+                person_id: personId,
+                organization_id: membership.membership.organization_id,
+            }))
+        );
+    }
 }
 export const changePasswordMutation = () =>
     useMutation({

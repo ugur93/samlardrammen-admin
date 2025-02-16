@@ -79,7 +79,6 @@ export const UserDetails: React.FC = () => {
     };
 
     const details = getUserDetails();
-    const membership = details?.membership;
     if (!details) return null;
     return (
         <div className="p-6 flex justify-center">
@@ -232,55 +231,60 @@ function MembershipDetailsView({ user }: { user: PersonDetails }) {
             <CardContent>
                 <Typography variant="h5">Uyelik</Typography>
                 {membership && membership?.length > 0 ? (
-                    membership.map((membership) => (
-                        <div key={membership.membership.id} className="mb-4">
-                            <h3 className="text-lg font-medium mb-2">{membership.organization.organization.name}</h3>
-                            <Card className="p-2">
-                                <h3 className="text-lg font-medium mb-2">Ødemeler</h3>
-                                <div className="bg-gray-50 p-2 mb-2">
-                                    <p>
-                                        <strong>Account Info:</strong>{' '}
-                                        {membership.organization.organization.bank_account_number}
-                                    </p>
-                                </div>
-                                <Table className="w-full">
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>År</TableCell>
-                                            <TableCell>Beløp</TableCell>
-                                            <TableCell>Betalt dato</TableCell>
-                                            <TableCell>Status</TableCell>
-                                            <TableCell></TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {membership.organization.paymentDetails.map((payment, index) => {
-                                            const userPaymentInfo = membership.paymentDetails.find(
-                                                (pd) => pd.payment_detail_id === payment.id
-                                            );
-                                            console.log(userPaymentInfo, payment);
-                                            return (
-                                                <TableRow
-                                                    key={index}
-                                                    className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
-                                                >
-                                                    <TableCell>{payment.year}</TableCell>
-                                                    <TableCell>
-                                                        NOK {(userPaymentInfo?.amount ?? payment.amount!).toFixed(2)}
-                                                    </TableCell>
-                                                    <ViewOrEditPaymentStatus
-                                                        paymentDetail={payment}
-                                                        membership={membership}
-                                                        user={user}
-                                                    />
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </Card>
-                        </div>
-                    ))
+                    membership
+                        .filter((m) => m.membership.is_member)
+                        .map((membership) => (
+                            <div key={membership.membership.id} className="mb-4">
+                                <h3 className="text-lg font-medium mb-2">
+                                    {membership.organization.organization.name}
+                                </h3>
+                                <Card className="p-2">
+                                    <h3 className="text-lg font-medium mb-2">Ødemeler</h3>
+                                    <div className="bg-gray-50 p-2 mb-2">
+                                        <p>
+                                            <strong>Account Info:</strong>{' '}
+                                            {membership.organization.organization.bank_account_number}
+                                        </p>
+                                    </div>
+                                    <Table className="w-full">
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>År</TableCell>
+                                                <TableCell>Beløp</TableCell>
+                                                <TableCell>Betalt dato</TableCell>
+                                                <TableCell>Status</TableCell>
+                                                <TableCell></TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {membership.organization.paymentDetails.map((payment, index) => {
+                                                const userPaymentInfo = membership.paymentDetails.find(
+                                                    (pd) => pd.payment_detail_id === payment.id
+                                                );
+                                                console.log(userPaymentInfo, payment);
+                                                return (
+                                                    <TableRow
+                                                        key={index}
+                                                        className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
+                                                    >
+                                                        <TableCell>{payment.year}</TableCell>
+                                                        <TableCell>
+                                                            NOK{' '}
+                                                            {(userPaymentInfo?.amount ?? payment.amount!).toFixed(2)}
+                                                        </TableCell>
+                                                        <ViewOrEditPaymentStatus
+                                                            paymentDetail={payment}
+                                                            membership={membership}
+                                                            user={user}
+                                                        />
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </Card>
+                            </div>
+                        ))
                 ) : (
                     <p>Uyelik yok</p>
                 )}

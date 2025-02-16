@@ -30,13 +30,12 @@ import {
     Typography,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { Controller, SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useGetAllUsers } from '../api/useAdminApi';
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useCreatePersonMutation, useGetPersons } from '../api/usePersonsApi';
 import { mapToFormValues, UserFormFields } from '../types/formTypes';
 import { genderVisningsnavn, PersonDetails } from '../types/personTypes';
-import { isStringEmpty } from '../utils/stringutils';
 import PageTemplate from './PageTemplate';
 export default function AdminPage() {
     return (
@@ -103,30 +102,11 @@ const UsersTable: React.FC = () => {
 const MembersTable: React.FC = () => {
     // React Query to fetch data
     const data = useGetPersons();
-    const createPersonFn = useCreatePersonMutation();
-    const [editableRow, setEditableRow] = useState<`users.${number}` | undefined>(undefined);
-
+    useGetOrganizations();
     const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean>(false);
 
-    const methods = useForm<{ users: UserFormFields[] }>({
-        defaultValues: {
-            users: data.map(mapToFormValues),
-        },
-    });
-    const { reset, control, setError, getValues } = methods;
-    const fields = useFieldArray({ name: 'users', control });
-    const onSubmit = async (index: number) => {
-        const data = getValues(`users.${index}`);
-
-        if (isStringEmpty(data.firstname)) {
-            setError(`users.${index}.firstname`, { message: 'Feltet er påkrevd' });
-            return;
-        }
-        createPersonFn.mutate(data);
-        setEditableRow(undefined);
-    };
     useEffect(() => {
-        reset({ users: data.map(mapToFormValues) });
+        //reset({ users: data.map(mapToFormValues) });
     }, [data]);
 
     return (
@@ -210,7 +190,6 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
         reset,
         formState: { errors },
         control,
-        getValues,
         watch,
     } = useForm<UserFormFields>({
         defaultValues: mapToFormValues(person),
@@ -218,7 +197,7 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
 
     const onSubmit: SubmitHandler<UserFormFields> = async (data) => {
         console.log('SUBMITTING', data);
-        createPersonFn.mutate(data);
+        createPersonFn.mutate({ person: data, existingPerson: person });
         onClose();
         reset();
     };
@@ -296,9 +275,9 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
                                     multiple
                                     value={organizations}
                                     input={<OutlinedInput label="Organizations" />}
-                                    renderValue={(selected) => (
+                                    renderValue={(organization) => (
                                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {(selected as number[])?.map((value) => {
+                                            {organization?.map((value) => {
                                                 const org = organizationsList.find((org) => org.id === value);
                                                 return <Chip key={value} label={org?.name || value} />;
                                             })}
