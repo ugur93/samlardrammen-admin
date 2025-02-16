@@ -23,6 +23,7 @@ import React, { useEffect, useState } from 'react';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateOrganizationApi, useDeleteOrganizationApi, useGetOrganizations } from '../api/useOrganizationsApi';
 import { FormControlledTextField } from '../components/FormControlledTextField';
+import { base } from '../context/AppContext';
 import { CreateOrUpdateOrganizationFormFields, mapToOrganizationFormValues } from '../types/formTypes';
 import { isStringEmpty } from '../utils/stringutils';
 import PageTemplate from './PageTemplate';
@@ -103,7 +104,7 @@ const OrganizationsTable: React.FC = () => {
                                                 editable={editableRow === `organizations.${index}`}
                                             />
                                         ) : (
-                                            <Link href={'/organization/' + organization.orgId}>
+                                            <Link href={`${base}/organization/${organization.orgId}`}>
                                                 <FormControlledTextField
                                                     type="text"
                                                     name={`organizations.${index}.name`}

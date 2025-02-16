@@ -35,6 +35,7 @@ import React, { useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useCreatePersonMutation, useGetPersons } from '../api/usePersonsApi';
+import { base } from '../context/AppContext';
 import { mapToFormValues, UserFormFields } from '../types/formTypes';
 import { genderVisningsnavn, PersonDetails } from '../types/personTypes';
 import PageTemplate from './PageTemplate';
@@ -90,7 +91,7 @@ const MembersTable: React.FC = () => {
                         {data?.map((personDetails) => (
                             <TableRow key={personDetails.person.id}>
                                 <TableCell>
-                                    <Link href={`/user/${personDetails.person.id}`}>
+                                    <Link href={`${base}/user/${personDetails.person.id}`}>
                                         {personDetails.person.firstname} {personDetails.person.lastname}
                                     </Link>
                                 </TableCell>

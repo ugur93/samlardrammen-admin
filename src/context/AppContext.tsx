@@ -32,7 +32,7 @@ interface PageDetail {
     roles: string[];
     label: string;
 }
-const base = '/samlardrammen-admin';
+export const base = '/samlardrammen-admin';
 
 const defaultPages = { admin: 'user-admin', user: 'user' } as Record<string, string>;
 const pages: PageDetail[] = [
