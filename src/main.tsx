@@ -11,8 +11,16 @@ import UserDetailsPage from './pages/UserPage.tsx';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <HashRouter basename="">
+        <HashRouter>
             <Routes>
+                <Route
+                    path="/"
+                    element={
+                        <PageTemplate>
+                            <LoginPage />
+                        </PageTemplate>
+                    }
+                />
                 <Route
                     path="login"
                     element={

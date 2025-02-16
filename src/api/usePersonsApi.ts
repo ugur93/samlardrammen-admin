@@ -154,7 +154,7 @@ export function useCreatePersonMutation() {
                 email: person.email,
                 phone_number: person.phoneNumber,
                 gender: person.gender,
-                birthdate: person.birthdate,
+                birthdate: person.birthdate?.trim().length > 0 ? person.birthdate : null,
             };
             const result = person.id
                 ? await personRef.upsert(personDbData).select()

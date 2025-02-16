@@ -70,7 +70,7 @@ export const AppContextProvider: React.FC<AppContextProviderProps> = ({ children
     }
 
     useEffect(() => {
-        if (loggedInUser != null && location.pathname === '/login') {
+        if ((loggedInUser != null && location.pathname.includes('login') == true) || location.pathname === '/') {
             const defaultPage = defaultPages[loggedInUser.roles[0]];
             const pageUrl = pages.find((page) => page.name === defaultPage)?.url ?? '/';
             navigate(pageUrl);
