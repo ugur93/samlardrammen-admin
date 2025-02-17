@@ -223,28 +223,37 @@ function MembershipDetailsView({ person }: { person: PersonDetails }) {
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {membership.organization.paymentDetails.map((payment, index) => {
-                                                const userPaymentInfo = membership.paymentDetails.find(
-                                                    (pd) => pd.payment_detail_id === payment.id
-                                                );
-                                                return (
-                                                    <TableRow
-                                                        key={index}
-                                                        className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
-                                                    >
-                                                        <TableCell>{payment.year}</TableCell>
-                                                        <TableCell>
-                                                            NOK{' '}
-                                                            {(userPaymentInfo?.amount ?? payment.amount!).toFixed(2)}
-                                                        </TableCell>
-                                                        <ViewOrEditPaymentStatus
-                                                            paymentDetail={payment}
-                                                            membership={membership}
-                                                            user={person}
-                                                        />
-                                                    </TableRow>
-                                                );
-                                            })}
+                                            {membership.organization.paymentDetails
+                                                .filter((p) => {
+                                                    const userPaymentInfo = membership.paymentDetails.find(
+                                                        (pd) => pd.payment_detail_id === p.id
+                                                    );
+                                                    return !p.deleted || userPaymentInfo?.payment_state == 'paid';
+                                                })
+                                                .map((payment, index) => {
+                                                    const userPaymentInfo = membership.paymentDetails.find(
+                                                        (pd) => pd.payment_detail_id === payment.id
+                                                    );
+                                                    return (
+                                                        <TableRow
+                                                            key={index}
+                                                            className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
+                                                        >
+                                                            <TableCell>{payment.year}</TableCell>
+                                                            <TableCell>
+                                                                NOK{' '}
+                                                                {(userPaymentInfo?.amount ?? payment.amount!).toFixed(
+                                                                    2
+                                                                )}
+                                                            </TableCell>
+                                                            <ViewOrEditPaymentStatus
+                                                                paymentDetail={payment}
+                                                                membership={membership}
+                                                                user={person}
+                                                            />
+                                                        </TableRow>
+                                                    );
+                                                })}
                                         </TableBody>
                                     </Table>
                                 </Card>
