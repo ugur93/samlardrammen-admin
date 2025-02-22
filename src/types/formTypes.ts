@@ -2,7 +2,7 @@ import { convertDateStringToOnlyDate } from '../utils/dateutils';
 import { OrganizationDetails, PaymentDetailDatabase, PersonDetails } from './personTypes';
 
 export interface UserFormFields {
-    id?: number;
+    personId?: number;
     firstname: string;
     lastname: string;
     email: string;
@@ -49,7 +49,7 @@ export interface ChangePasswordValues {
 
 export function mapToFormValues(person?: PersonDetails | null): UserFormFields {
     return {
-        id: person?.person?.id ?? undefined,
+        personId: person?.person?.id ?? undefined,
         firstname: person?.person?.firstname || '',
         lastname: person?.person?.lastname || '',
         email: person?.person?.email || '',

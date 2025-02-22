@@ -1,5 +1,7 @@
+import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import MoneyOffIcon from '@mui/icons-material/MoneyOff';
 import {
     Box,
     Button,
@@ -35,17 +37,16 @@ import {
     Typography,
 } from '@mui/material';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Controller, FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useCreatePersonMutation, useGetPersons } from '../api/usePersonsApi';
 import { FormDatePicker } from '../components/FormDatePicker';
 import { base } from '../context/AppContext';
 import { mapToFormValues, UserFormFields } from '../types/formTypes';
-import { genderVisningsnavn, PersonDetails } from '../types/personTypes';
+import { genderVisningsnavn, MembershipDetails, PersonDetails } from '../types/personTypes';
 import { getComparator, Order } from '../types/table.types';
 import PageTemplate from './PageTemplate';
-
 interface MembersTableData {
     id: number;
     name: string;
@@ -53,13 +54,14 @@ interface MembersTableData {
     age: number | string;
     email: string | null;
     gender: string;
-    membership: string;
-    paid: string;
+    membership: MembershipDetails[] | undefined;
+    paid: MembershipDetails[] | undefined;
 }
 interface HeadCell {
     disablePadding: boolean;
     id: keyof MembersTableData;
     label: string;
+    className?: string;
     numeric: boolean;
 }
 interface FilterOption {
@@ -102,12 +104,7 @@ const headCells: readonly HeadCell[] = [
         numeric: false,
         disablePadding: false,
         label: 'Medlemskap',
-    },
-    {
-        id: 'paid',
-        numeric: false,
-        disablePadding: false,
-        label: 'Betalt for i år',
+        className: 'w-[300px]',
     },
 ];
 
@@ -127,6 +124,10 @@ const filterOptions: FilterOption[] = [
     {
         label: 'Barn under 16',
         value: 'children',
+    },
+    {
+        label: 'Betalt',
+        value: 'paid',
     },
 ];
 
@@ -151,11 +152,11 @@ export const UserAdminPage: React.FC = () => {
 const MembersTable: React.FC = () => {
     // React Query to fetch data
     const data = useGetPersons();
+    useGetOrganizations();
     const [order, setOrder] = React.useState<Order>('asc');
     const [selectedOptions, setSelectedOptions] = React.useState<FilterOption[]>([{ label: 'Alle', value: 'all' }]);
     const [orderBy, setOrderBy] = React.useState<keyof MembersTableData>('name');
-    useGetOrganizations();
-    const [createOrEdit, setCreateOrEdit] = useState<number | boolean>(false);
+    const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean | undefined>(false);
 
     function mapPersondetailsToTableData(personDetails: PersonDetails): MembersTableData {
         return {
@@ -169,15 +170,11 @@ const MembersTable: React.FC = () => {
                 : '-',
             email: personDetails.person.email,
             gender: genderVisningsnavn(personDetails),
-            membership: personDetails.membership?.map((d) => d.organization.organization.name).join(', ') || '',
+            membership: personDetails.membership,
             paid:
-                personDetails.membership
-                    ?.filter((m) => m.paymentDetails.some((d) => d.payment_state == 'paid'))
-                    .map((d) => d.organization.organization.name)
-                    .join(', ') || '',
+                personDetails.membership?.filter((m) => m.paymentDetails.some((d) => d.payment_state == 'paid')) || [],
         };
     }
-    console.log(selectedOptions);
     const visibleRows = React.useMemo(
         () =>
             [...data.map(mapPersondetailsToTableData)]
@@ -215,6 +212,7 @@ const MembersTable: React.FC = () => {
                                     <TableSortLabel
                                         active={orderBy === headCell.id}
                                         direction={orderBy === headCell.id ? order : 'asc'}
+                                        className={headCell.className}
                                         onClick={createSortHandler(headCell.id)}
                                     >
                                         {headCell.label}
@@ -228,17 +226,37 @@ const MembersTable: React.FC = () => {
                     <TableBody>
                         {visibleRows?.map((personDetails) => (
                             <TableRow key={personDetails.id}>
-                                <TableCell>
+                                <TableCell className="w-[150px]">
                                     <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
                                 </TableCell>
                                 <TableCell>{personDetails.age}</TableCell>
                                 <TableCell>{personDetails.birthdate}</TableCell>
                                 <TableCell>{personDetails.email}</TableCell>
                                 <TableCell>{personDetails.gender}</TableCell>
-                                <TableCell>{personDetails.membership}</TableCell>
-                                <TableCell>{personDetails.paid}</TableCell>
                                 <TableCell>
-                                    <IconButton onClick={() => setCreateOrEdit(personDetails.id)}>
+                                    <table>
+                                        <tbody>
+                                            {personDetails.membership?.map((m) => (
+                                                <tr key={m.organization.organization.id}>
+                                                    <td>{m.organization.organization.name}</td>
+                                                    <td className="w-[10px]">
+                                                        {m.paymentDetails.some((d) => d.payment_state == 'paid') ? (
+                                                            <CheckIcon color="primary" />
+                                                        ) : (
+                                                            <MoneyOffIcon color="error" />
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </TableCell>
+                                <TableCell>
+                                    <IconButton
+                                        onClick={() =>
+                                            setCreateOrEdit(data.find((p) => p.person.id == personDetails.id))
+                                        }
+                                    >
                                         <EditIcon />
                                     </IconButton>
                                 </TableCell>
@@ -247,14 +265,16 @@ const MembersTable: React.FC = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
-            {createOrEdit != false && (
-                <CreateOrEditUserDialog
-                    open
-                    person={typeof createOrEdit == 'number' ? data.find((p) => p.person.id == createOrEdit) : undefined}
-                    onClose={() => setCreateOrEdit(false)}
-                    refetch={() => null}
-                />
-            )}
+            <Dialog open={createOrEdit} keepMounted onClose={() => setCreateOrEdit(false)}>
+                <React.Suspense>
+                    {createOrEdit !== false && (
+                        <CreateOrEditUserDialog
+                            person={createOrEdit as PersonDetails}
+                            onClose={() => setCreateOrEdit(false)}
+                        />
+                    )}
+                </React.Suspense>
+            </Dialog>
         </Container>
     );
 };
@@ -263,14 +283,18 @@ interface CreateUserDialogProps {
     open: boolean;
     person?: PersonDetails;
     onClose: () => void;
-    refetch: () => void;
 }
 
 const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose, person }) => {
-    const organizationsList = useGetOrganizations().map((org) => ({
-        id: org.organization.id,
-        name: org.organization.name,
-    }));
+    const orgs = useGetOrganizations();
+    const organizationsList = useMemo(
+        () =>
+            orgs.map((org) => ({
+                id: org.organization.id,
+                name: org.organization.name,
+            })),
+        []
+    );
 
     const createPersonFn = useCreatePersonMutation();
     const methods = useForm<UserFormFields>({
@@ -294,7 +318,7 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
     const organizations = watch('organizations');
 
     return (
-        <Dialog open={open} onClose={onClose}>
+        <>
             <DialogTitle>{person ? 'Oppdater medlem' : 'Legg til medlem'} </DialogTitle>
             <DialogContent>
                 <FormProvider {...methods}>
@@ -336,7 +360,7 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
                             error={Boolean(errors.email)}
                             helperText={errors.email?.message}
                         />
-                        <FormDatePicker name="birthdate" />
+                        <FormDatePicker name="birthdate" label="Fødselsdato" />
                         <div>
                             <FormControl
                                 component="fieldset"
@@ -416,7 +440,7 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
                     {person ? 'Oppdater' : 'Opprett'}
                 </Button>
             </DialogActions>
-        </Dialog>
+        </>
     );
 };
 
@@ -503,6 +527,9 @@ function filterOption(data: MembersTableData, selectedOptions: FilterOption[]) {
     }
     if (selectedOptions.some((o) => o.value == 'children')) {
         result = result && Number(data.age) < 16;
+    }
+    if (selectedOptions.some((o) => o.value == 'paid')) {
+        result = result && data.paid?.length !== 0;
     }
     return result;
 }

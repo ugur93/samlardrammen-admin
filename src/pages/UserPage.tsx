@@ -1,6 +1,7 @@
 import EditIcon from '@mui/icons-material/Edit';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import {
+    Box,
     Button,
     Card,
     CardContent,
@@ -17,9 +18,7 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format } from 'date-fns';
-import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useParams } from 'react-router';
@@ -56,7 +55,9 @@ export const UserDetails: React.FC = () => {
     });
 
     const { register, handleSubmit, reset } = methods;
+
     const onSubmit = (data: UserFormFields) => {
+        console.log(data);
         createPersonFn.mutate({ person: data, existingPerson: userDetails });
         reset(mapToFormValues(getUserDetails()));
         setIsEditing(false);
@@ -72,14 +73,9 @@ export const UserDetails: React.FC = () => {
     return (
         <div className="p-6 flex justify-center">
             <div className="w-full max-w-4xl">
-                <header className="flex justify-between items-center bg-blue-600 text-white p-4 rounded-md mb-6">
-                    <h1 className="text-2xl font-bold">Medlemskap</h1>
-                    {!isEditing && (
-                        <Button className="!text-white" onClick={handleEditClick}>
-                            Oppdater
-                        </Button>
-                    )}
-                </header>
+                <Typography variant="h4" className="text-black">
+                    {details.name}
+                </Typography>
 
                 <Card className="mb-6">
                     <CardContent>
@@ -101,7 +97,7 @@ export const UserDetails: React.FC = () => {
                                         className="border p-2 w-full mt-2"
                                     />
 
-                                    <FormDatePicker name="birthdate" />
+                                    <FormDatePicker name="birthdate" label="Fødselsdato" />
 
                                     <TextField
                                         size="small"
@@ -122,55 +118,76 @@ export const UserDetails: React.FC = () => {
                                         <div className="flex flex-col gap-4">
                                             <TextField
                                                 size="small"
-                                                label="Adress"
+                                                label="Addresselinje 1"
                                                 {...register('address.addressLine1')}
                                                 placeholder="Street"
                                                 className="border p-2 w-full"
                                             />
                                             <TextField
                                                 size="small"
-                                                label="Sehir"
+                                                label="Addresselinje 2"
+                                                {...register('address.addressLine2')}
+                                                placeholder="Street"
+                                                className="border p-2 w-full"
+                                            />
+                                            <TextField
+                                                size="small"
+                                                label="By"
                                                 {...register('address.city')}
                                                 placeholder="City"
                                                 className="border p-2 w-full mt-2"
                                             />
                                             <TextField
                                                 size="small"
-                                                label="Posta kodu"
+                                                label="Postnummer"
                                                 {...register('address.postcode')}
-                                                placeholder="Zip Code"
+                                                placeholder="Postnummer"
                                                 className="border p-2 w-full mt-2"
                                             />
                                         </div>
                                     </div>
-                                    <Button type="submit" className="bg-blue-600 text-white">
-                                        Lagre
-                                    </Button>
+                                    <div className="flex flex-row gap-2">
+                                        <Button variant="outlined" onClick={() => setIsEditing(false)}>
+                                            Avbryt
+                                        </Button>
+                                        <Button variant="contained" type="submit">
+                                            Lagre
+                                        </Button>
+                                    </div>
                                 </form>
                             </FormProvider>
                         ) : (
-                            <>
-                                <p>
-                                    <strong>Navn:</strong> {details.name}
-                                </p>
-                                <p>
-                                    <strong>Fødselsdato:</strong>{' '}
-                                    {details.person.birthdate
-                                        ? format(new Date(details.person.birthdate), 'dd/MM/yyyy')
-                                        : ''}
-                                </p>
-                                <p>
-                                    <strong>Email:</strong> {details.person.email}
-                                </p>
-                                <p>
-                                    <strong>Telefon:</strong> {details.person.phone_number}
-                                </p>
-                                <p>
-                                    <strong>Address:</strong> {details.address?.addressLine1}{' '}
-                                    {details.address?.addressLine2}, {details.address?.city},{' '}
-                                    {details.address?.postcode}
-                                </p>
-                            </>
+                            <div>
+                                <span>
+                                    <p>
+                                        <strong>Navn:</strong> {details.name}
+                                    </p>
+                                    <p>
+                                        <strong>Fødselsdato:</strong>{' '}
+                                        {details.person.birthdate
+                                            ? format(new Date(details.person.birthdate), 'dd/MM/yyyy')
+                                            : ''}
+                                    </p>
+                                    <p>
+                                        <strong>Email:</strong> {details.person.email}
+                                    </p>
+                                    <p>
+                                        <strong>Telefon:</strong> {details.person.phone_number}
+                                    </p>
+                                    <p>
+                                        <strong>Address:</strong> {details.address?.addressLine1}{' '}
+                                        {details.address?.addressLine2}, {details.address?.city},{' '}
+                                        {details.address?.postcode}
+                                    </p>
+                                </span>
+                                <Box className="flex flex-row gap-2 pt-3">
+                                    {!isEditing && (
+                                        <Button variant="contained" onClick={handleEditClick}>
+                                            Rediger
+                                        </Button>
+                                    )}
+                                </Box>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -185,85 +202,88 @@ function MembershipDetailsView({ person }: { person: PersonDetails }) {
     const membership = person?.membership;
 
     return (
-        <Card className="mb-6">
-            <CardContent>
-                <Typography variant="h5" className="!mb-4">
-                    Medlemskap
-                </Typography>
-                {membership && membership?.length > 0 ? (
-                    membership
-                        .sort((b) => (b.membership.is_member ? -1 : 1))
-                        .map((membership) => (
-                            <div
-                                key={membership.membership.id}
-                                className={`mb-4 ${!membership.membership.is_member ? 'bg-red-100' : ''}`}
-                            >
-                                <div className="flex flex-row gap-2 align-middle self-center p-2">
-                                    <Typography variant="h6">{membership.organization.organization.name}</Typography>
-                                    {!membership.membership.is_member && (
-                                        <div className="self-center">(Medlemskapet er avsluttet)</div>
-                                    )}
-                                </div>
-                                <Card className="p-4">
-                                    <Typography variant="h6">Betalinger</Typography>
-                                    <div className="bg-gray-50 p-2 mb-2">
-                                        <p>
-                                            <strong>Kontonummer:</strong>{' '}
-                                            {membership.organization.organization.bank_account_number}
-                                        </p>
+        <>
+            <Typography variant="h4" className="!mb-4 text-black">
+                Medlemskap
+            </Typography>
+            <Card className="mb-6">
+                <CardContent>
+                    {membership && membership?.length > 0 ? (
+                        membership
+                            .sort((b) => (b.membership.is_member ? -1 : 1))
+                            .map((membership) => (
+                                <div
+                                    key={membership.membership.id}
+                                    className={`mb-4 ${!membership.membership.is_member ? 'bg-red-100' : ''}`}
+                                >
+                                    <div className="flex flex-row gap-2 align-middle self-center p-2">
+                                        <Typography variant="h6">
+                                            {membership.organization.organization.name}
+                                        </Typography>
+                                        {!membership.membership.is_member && (
+                                            <div className="self-center">(Medlemskapet er avsluttet)</div>
+                                        )}
                                     </div>
-                                    <Table className="w-full">
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell>År</TableCell>
-                                                <TableCell>Beløp</TableCell>
-                                                <TableCell>Betalt dato</TableCell>
-                                                <TableCell>Status</TableCell>
-                                                <TableCell></TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {membership.organization.paymentDetails
-                                                .filter((p) => {
-                                                    const userPaymentInfo = membership.paymentDetails.find(
-                                                        (pd) => pd.payment_detail_id === p.id
-                                                    );
-                                                    return !p.deleted || userPaymentInfo?.payment_state == 'paid';
-                                                })
-                                                .map((payment, index) => {
-                                                    const userPaymentInfo = membership.paymentDetails.find(
-                                                        (pd) => pd.payment_detail_id === payment.id
-                                                    );
-                                                    return (
-                                                        <TableRow
-                                                            key={index}
-                                                            className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
-                                                        >
-                                                            <TableCell>{payment.year}</TableCell>
-                                                            <TableCell>
-                                                                NOK{' '}
-                                                                {(userPaymentInfo?.amount ?? payment.amount!).toFixed(
-                                                                    2
-                                                                )}
-                                                            </TableCell>
-                                                            <ViewOrEditPaymentStatus
-                                                                paymentDetail={payment}
-                                                                membership={membership}
-                                                                user={person}
-                                                            />
-                                                        </TableRow>
-                                                    );
-                                                })}
-                                        </TableBody>
-                                    </Table>
-                                </Card>
-                            </div>
-                        ))
-                ) : (
-                    <p>Uyelik yok</p>
-                )}
-            </CardContent>
-        </Card>
+                                    <Card className="p-4">
+                                        <Typography variant="h6">Betalinger</Typography>
+                                        <div className="bg-gray-50 p-2 mb-2">
+                                            <p>
+                                                <strong>Kontonummer:</strong>{' '}
+                                                {membership.organization.organization.bank_account_number}
+                                            </p>
+                                        </div>
+                                        <Table className="w-full">
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>År</TableCell>
+                                                    <TableCell>Beløp</TableCell>
+                                                    <TableCell>Status</TableCell>
+                                                    <TableCell></TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {membership.organization.paymentDetails
+                                                    .filter((p) => {
+                                                        const userPaymentInfo = membership.paymentDetails.find(
+                                                            (pd) => pd.payment_detail_id === p.id
+                                                        );
+                                                        return !p.deleted || userPaymentInfo?.payment_state == 'paid';
+                                                    })
+                                                    .map((payment, index) => {
+                                                        const userPaymentInfo = membership.paymentDetails.find(
+                                                            (pd) => pd.payment_detail_id === payment.id
+                                                        );
+                                                        return (
+                                                            <TableRow
+                                                                key={index}
+                                                                className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
+                                                            >
+                                                                <TableCell>{payment.year}</TableCell>
+                                                                <TableCell>
+                                                                    NOK{' '}
+                                                                    {(
+                                                                        userPaymentInfo?.amount ?? payment.amount!
+                                                                    ).toFixed(2)}
+                                                                </TableCell>
+                                                                <ViewOrEditPaymentStatus
+                                                                    paymentDetail={payment}
+                                                                    membership={membership}
+                                                                    user={person}
+                                                                />
+                                                            </TableRow>
+                                                        );
+                                                    })}
+                                            </TableBody>
+                                        </Table>
+                                    </Card>
+                                </div>
+                            ))
+                    ) : (
+                        <p>Uyelik yok</p>
+                    )}
+                </CardContent>
+            </Card>
+        </>
     );
 }
 
@@ -309,12 +329,6 @@ function ViewOrEditPaymentStatus({
     }, [userPaymentInfo]);
 
     function onSave(data: CreateOrUpdateUserPaymentDetailsFormFields) {
-        if (data.paymentState == 'paid') {
-            if (data.payment_date == undefined) {
-                setError('payment_date', { message: 'Betalt dato er påkrevd når status er betalt' });
-                return;
-            }
-        }
         setEditPayment(undefined);
         userPaymentInfoFn.mutateAsync(data).then(() => {
             reset();
@@ -323,32 +337,6 @@ function ViewOrEditPaymentStatus({
 
     return (
         <>
-            <TableCell>
-                {editPayment != paymentDetail.id ? (
-                    <Typography>
-                        {userPaymentInfo?.payment_date ? dayjs(userPaymentInfo?.payment_date).format('DD/MM/YYYY') : ''}
-                    </Typography>
-                ) : (
-                    <Controller
-                        control={control}
-                        name="payment_date"
-                        render={({ field }) => {
-                            return (
-                                <DatePicker
-                                    value={field.value ? dayjs(field.value) : null}
-                                    inputRef={field.ref}
-                                    slotProps={{
-                                        textField: { size: 'small', helperText: errors.payment_date?.message },
-                                    }}
-                                    onChange={(date) => {
-                                        field.onChange(date);
-                                    }}
-                                />
-                            );
-                        }}
-                    />
-                )}
-            </TableCell>
             {editPayment != paymentDetail.id ? (
                 <TableCell>{paid ? 'Betalt' : 'Ikke betalt'}</TableCell>
             ) : (

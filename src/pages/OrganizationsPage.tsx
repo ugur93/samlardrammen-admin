@@ -143,7 +143,15 @@ const OrganizationsTable: React.FC = () => {
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        <IconButton onClick={() => setDeleteOrganization(organization)}>
+                                        <IconButton
+                                            onClick={() => {
+                                                if (organization.orgId === undefined) {
+                                                    fields.remove(index);
+                                                    return;
+                                                }
+                                                setDeleteOrganization(organization);
+                                            }}
+                                        >
                                             <DeleteOutline />
                                         </IconButton>
                                     </TableCell>

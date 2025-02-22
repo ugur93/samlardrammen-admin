@@ -4,8 +4,9 @@ import { Controller, useFormContext } from 'react-hook-form';
 
 type FormDatePickerProps = {
     name: string;
+    label: string;
 };
-export function FormDatePicker({ name }: FormDatePickerProps) {
+export function FormDatePicker({ name, label }: FormDatePickerProps) {
     const {
         control,
         formState: { errors },
@@ -20,12 +21,12 @@ export function FormDatePicker({ name }: FormDatePickerProps) {
                         className="!mt-2"
                         value={dayjs(field.value)}
                         inputRef={field.ref}
-                        label="Frist"
+                        label={label}
                         slotProps={{
                             textField: { size: 'medium', helperText: errors[name]?.message },
                         }}
                         onChange={(date) => {
-                            field.onChange(date);
+                            field.onChange(date?.toISOString());
                         }}
                     />
                 );
