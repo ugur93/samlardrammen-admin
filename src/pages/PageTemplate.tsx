@@ -4,10 +4,11 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider/L
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import 'dayjs/locale/en-gb';
-import { PropsWithChildren, Suspense } from 'react';
-import { useNavigate } from 'react-router';
-import { useLogout } from '../api/usePersonsApi';
-import { AppContextProvider, useAppContext } from '../context/AppContext';
+import { PropsWithChildren, Suspense, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import { useLoggedInUser, useLogout } from '../api/usePersonsApi';
+import { AppContextProvider, defaultPages, pages, useAppContext } from '../context/AppContext';
+import LoginMagicLinkPage from './LoginMagicLink';
 export const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
@@ -25,14 +26,35 @@ export default function PageTemplate({ children }: PropsWithChildren<unknown>) {
                 <AppContextProvider>
                     <Box sx={{ flexGrow: 1 }}>
                         <CustomAppBar />
-                        <Box>
-                            <Suspense fallback={<CircularProgress />}>{children}</Suspense>
-                        </Box>
                     </Box>
+                    <LoginProvider>{children}</LoginProvider>
                 </AppContextProvider>
             </LocalizationProvider>
             <ReactQueryDevtools />
         </QueryClientProvider>
+    );
+}
+function LoginProvider({ children }: PropsWithChildren<unknown>) {
+    const loggedInUser = useLoggedInUser();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const initialLoggedIn = useRef(loggedInUser != null);
+
+    useEffect(() => {
+        console.log('loggedInUser', loggedInUser, initialLoggedIn.current);
+        if (!initialLoggedIn.current && loggedInUser) {
+            const defaultPage = defaultPages[loggedInUser.roles[0]];
+            const pageUrl = pages.find((page) => page.name === defaultPage)?.url ?? '/user';
+            navigate(pageUrl, { replace: true });
+        }
+    }, [loggedInUser]);
+    if (loggedInUser == null && location.pathname.includes('login') == false) {
+        return <LoginMagicLinkPage />;
+    }
+    return (
+        <Box>
+            <Suspense fallback={<CircularProgress />}>{children}</Suspense>
+        </Box>
     );
 }
 
@@ -83,7 +105,7 @@ function UserButton() {
     if (user) {
         return (
             <div className="flex items-center space-x-4">
-                <Link className="!text-white pr-4" href="user">
+                <Link className="!text-white pr-4" href="#/user">
                     {user.details?.name}
                 </Link>
                 <Button

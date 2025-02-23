@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import { Button, Card, CardContent, Input } from '@mui/material';
+import { EmailOtpType } from '@supabase/supabase-js';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useMutation } from '@tanstack/react-query';
-import { createClient } from '@supabase/supabase-js';
-import { Card, CardContent, Input, Button } from '@mui/material';
-import supabase from '../supabase';
-import { LoginFormValues, ChangePasswordValues } from '../types/formTypes';
+import { useLocation, useNavigate } from 'react-router';
 import { changePasswordMutation, loginMutation } from '../api/usePersonsApi';
-import { useNavigate } from 'react-router';
+import supabase from '../supabase';
+import { ChangePasswordValues, LoginFormValues } from '../types/formTypes';
 
 const LoginPage: React.FC = () => {
     const [showChangePassword, setShowChangePassword] = useState(false);
@@ -17,6 +16,24 @@ const LoginPage: React.FC = () => {
         reset: resetChangePassword,
     } = useForm<ChangePasswordValues>();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        console.log('location.pathname', location.pathname);
+        if (location.pathname == '/auth/confirm') {
+            loginWithHash();
+        }
+    }, []);
+
+    async function loginWithHash() {
+        const queryParams = new URLSearchParams(location.search);
+        const token_hash = queryParams.get('token_hash')!;
+        const type = queryParams.get('type') as EmailOtpType;
+
+        console.log('token_hash', token_hash, type);
+        const { error } = await supabase.auth.verifyOtp({ token_hash, type });
+        console.log('error', error);
+    }
 
     const changePasswordMutationFn = changePasswordMutation();
     const loginMutationFn = loginMutation();
@@ -28,6 +45,17 @@ const LoginPage: React.FC = () => {
             },
         });
     };
+
+    async function signInWithEmail(formValues: LoginFormValues) {
+        const { data, error } = await supabase.auth.signInWithOtp({
+            email: formValues.email,
+            options: {
+                // set this to false if you do not want the user to be automatically signed up
+                shouldCreateUser: false,
+                emailRedirectTo: 'https://example.com/welcome',
+            },
+        });
+    }
 
     const onChangePasswordSubmit = (data: ChangePasswordValues) => {
         changePasswordMutationFn.mutate(data, {
@@ -48,7 +76,7 @@ const LoginPage: React.FC = () => {
                 <Card className="shadow-lg rounded-2xl">
                     <CardContent>
                         <h1 className="text-2xl font-bold mb-4 text-center text-blue-600">Login</h1>
-                        <form onSubmit={handleSubmit(onLoginSubmit)}>
+                        <form onSubmit={handleSubmit(signInWithEmail)}>
                             <div className="mb-4">
                                 <Input
                                     {...register('email')}
@@ -58,7 +86,7 @@ const LoginPage: React.FC = () => {
                                     className="border rounded-md p-2 w-full"
                                 />
                             </div>
-                            <div className="mb-4">
+                            {/* <div className="mb-4">
                                 <Input
                                     {...register('password')}
                                     type="password"
@@ -66,7 +94,7 @@ const LoginPage: React.FC = () => {
                                     required
                                     className="border rounded-md p-2 w-full"
                                 />
-                            </div>
+                            </div> */}
                             <Button
                                 type="submit"
                                 className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"

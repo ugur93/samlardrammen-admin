@@ -1,6 +1,5 @@
 import { User } from '@supabase/supabase-js';
-import { createContext, ReactNode, useContext, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { createContext, ReactNode, useContext } from 'react';
 import { useLoggedInUser } from '../api/usePersonsApi';
 import { PersonDetails } from '../types/personTypes';
 
@@ -34,8 +33,8 @@ interface PageDetail {
 }
 export const base = '/samlardrammen-admin/#';
 
-const defaultPages = { admin: 'user-admin', user: 'user' } as Record<string, string>;
-const pages: PageDetail[] = [
+export const defaultPages = { admin: 'user-admin', user: 'user' } as Record<string, string>;
+export const pages: PageDetail[] = [
     {
         name: 'user',
         url: `/user`,
@@ -61,21 +60,6 @@ function getPages(roles: string[]): PageDetail[] {
 }
 export const AppContextProvider: React.FC<AppContextProviderProps> = ({ children }) => {
     const loggedInUser = useLoggedInUser();
-    const navigate = useNavigate();
-    const location = useLocation();
-
-    if (loggedInUser == null && location.pathname.includes('login') == false) {
-        navigate('/login');
-        return null;
-    }
-
-    useEffect(() => {
-        if ((loggedInUser != null && location.pathname.includes('login') == true) || location.pathname === '/') {
-            const defaultPage = defaultPages[loggedInUser.roles[0]];
-            const pageUrl = pages.find((page) => page.name === defaultPage)?.url ?? '/';
-            navigate(pageUrl);
-        }
-    }, [loggedInUser]);
 
     return (
         <AppContext.Provider

@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter, Route, Routes } from 'react-router';
 import './index.css';
-import LoginPage from './pages/LoginPage.tsx';
+import LoginMagicLinkPage from './pages/LoginMagicLink.tsx';
 import { OrganizationDetailssPage } from './pages/OrganizationDetailsPage.tsx';
 import { OrganizationsPage } from './pages/OrganizationsPage.tsx';
 import PageTemplate from './pages/PageTemplate.tsx';
@@ -17,7 +17,7 @@ createRoot(document.getElementById('root')!).render(
                     path="/"
                     element={
                         <PageTemplate>
-                            <LoginPage />
+                            <LoginMagicLinkPage />
                         </PageTemplate>
                     }
                 />
@@ -25,7 +25,7 @@ createRoot(document.getElementById('root')!).render(
                     path="login"
                     element={
                         <PageTemplate>
-                            <LoginPage />
+                            <LoginMagicLinkPage />
                         </PageTemplate>
                     }
                 />
@@ -34,6 +34,14 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="user/:id" element={<UserDetailsPage />} />
                 <Route path="organizations" element={<OrganizationsPage />} />
                 <Route path="organization/:id" element={<OrganizationDetailssPage />} />
+                <Route
+                    path="auth/confirm"
+                    element={
+                        <PageTemplate>
+                            <LoginMagicLinkPage />
+                        </PageTemplate>
+                    }
+                />
             </Routes>
         </HashRouter>
     </StrictMode>

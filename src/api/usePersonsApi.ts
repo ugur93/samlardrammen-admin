@@ -8,9 +8,10 @@ import {
     LoginFormValues,
     UserFormFields,
 } from '../types/formTypes';
-import { PersonDatabase, PersonDetails } from '../types/personTypes';
+import { PersonDetails } from '../types/personTypes';
 
 export const QueryKeys = {
+    loggedInUser: ['logged-in-user'],
     fetchPersons: ['persons'],
     fetchPersonByEmail: (email: string) => ['person', 'email', email],
     fetchPersonById: (id?: string | number) => ['person', 'id', id],
@@ -51,19 +52,16 @@ const fetchPersons = async (): Promise<PersonDetails[]> => {
     );
 };
 
-const fetchPersonByEmail = async (email?: string): Promise<Database['public']['Tables']['person']['Row'][]> => {
-    const { data, error } = await supabase.from('person').select('*').filter('email', 'eq', email);
-    if (error) throw new Error(error.message);
-    return data;
-};
-const fetchPersonById = async (user_id?: string): Promise<PersonDetails | null> => {
-    if (!user_id) return null;
+const fetchPersonByEmail = async (email?: string): Promise<PersonDetails | null> => {
     const { data: person, error } = await supabase
         .from('person')
         .select('*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*)))')
-        .filter('id', 'eq', user_id)
+        .filter('email', 'eq', email)
         .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+        console.error(error);
+        return null;
+    }
     return {
         person: person,
         membership: person.membership.map((membership) => ({
@@ -78,10 +76,60 @@ const fetchPersonById = async (user_id?: string): Promise<PersonDetails | null> 
         name: `${person.firstname} ${person.lastname}`,
     };
 };
-const fetchPersonByUserId = async (user_id?: string): Promise<PersonDatabase | null> => {
-    const { data, error } = await supabase.from('person').select('*').filter('user_id', 'eq', user_id);
-    if (error) throw new Error(error.message);
-    return data.length > 0 ? data[0] : null;
+const fetchPersonById = async (user_id?: string): Promise<PersonDetails | null> => {
+    if (!user_id) return null;
+    const { data: person, error } = await supabase
+        .from('person')
+        .select('*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*)))')
+        .filter('id', 'eq', user_id)
+        .single();
+    if (error) {
+        console.error(error);
+        return null;
+    }
+    return {
+        person: person,
+        membership: person.membership.map((membership) => ({
+            membership: membership,
+            paymentDetails: membership.payment_info,
+            organization: {
+                organization: membership.organization!,
+                paymentDetails: membership.organization!.payment_detail,
+            },
+        })),
+        address: person.address ? person.address[0] : undefined,
+        name: `${person.firstname} ${person.lastname}`,
+    };
+};
+const fetchPersonByUserIdOrEmail = async (user_id?: string, email?: string): Promise<PersonDetails | null> => {
+    const personDetailsUser = await fetchPersonByUserId(user_id);
+    if (personDetailsUser) return personDetailsUser;
+    const personDetailsEmail = await fetchPersonByEmail(email);
+    return personDetailsEmail;
+};
+const fetchPersonByUserId = async (user_id?: string): Promise<PersonDetails | null> => {
+    const { data: person, error } = await supabase
+        .from('person')
+        .select('*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*)))')
+        .filter('user_id', 'eq', user_id)
+        .single();
+    if (error) {
+        console.error(error);
+        return null;
+    }
+    return {
+        person: person,
+        membership: person.membership.map((membership) => ({
+            membership: membership,
+            paymentDetails: membership.payment_info,
+            organization: {
+                organization: membership.organization!,
+                paymentDetails: membership.organization!.payment_detail,
+            },
+        })),
+        address: person.address ? person.address[0] : undefined,
+        name: `${person.firstname} ${person.lastname}`,
+    };
 };
 export function useGetPersons() {
     const { data } = useSuspenseQuery<PersonDetails[], Error>({
@@ -192,7 +240,6 @@ async function updateMembership(personId: number, personForm: UserFormFields, ex
         await supabase.from('membership').update({ is_member: false }).filter('id', 'eq', membership.membership.id);
     }
 
-    console.log('Membership organizations', personForm.organizations);
     const addMembership = personForm.organizations.filter(
         (d) =>
             !existingPerson?.membershipRemoved?.some((m) => m.membership.organization_id == d) &&
@@ -217,10 +264,8 @@ async function updateMembership(personId: number, personForm: UserFormFields, ex
     );
 
     const updateMembership =
-        uniqueMembershipRemoved?.filter(
-            (membership) =>
-                personForm.organizations.includes(membership.membership.organization_id!) &&
-                !membership.membership.is_member
+        uniqueMembershipRemoved?.filter((membership) =>
+            personForm.organizations.includes(membership.membership.organization_id!.toString())
         ) ?? [];
 
     if (updateMembership.length > 0) {
@@ -274,16 +319,18 @@ export const loginMutation = () => {
 
 export const useLoggedInUser = () => {
     return useSuspenseQuery<LoggedInUser | null, any>({
-        queryKey: ['logged-in-user'],
+        queryKey: QueryKeys.loggedInUser,
         queryFn: async () => {
+            console.log('Fetching logged in user');
             const user = await supabase.auth.getUser();
             if (user.error) return null;
             console.log(user);
-            const personDetail = (await fetchPersonByUserId(user.data.user.id))!;
+            const personDetails = (await fetchPersonByUserIdOrEmail(user.data.user.id, user.data.user.email))!;
+
             return {
                 user: user.data.user,
-                details: { person: { ...personDetail }, name: `${personDetail?.firstname} ${personDetail?.lastname}` },
-                roles: personDetail.roles ?? [],
+                details: personDetails,
+                roles: personDetails?.person?.roles ?? [],
             };
         },
     }).data;

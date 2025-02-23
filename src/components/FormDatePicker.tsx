@@ -5,12 +5,19 @@ import { Controller, useFormContext } from 'react-hook-form';
 type FormDatePickerProps = {
     name: string;
     label: string;
+    disabled?: boolean;
+    editable?: boolean;
 };
-export function FormDatePicker({ name, label }: FormDatePickerProps) {
+export function FormDatePicker({ name, label, editable }: FormDatePickerProps) {
     const {
         control,
+        getValues,
         formState: { errors },
     } = useFormContext();
+    if (!editable) {
+        const date = getValues(name);
+        return <span>{date ? new Date(date).toLocaleDateString() : '-'}</span>;
+    }
     return (
         <Controller
             control={control}

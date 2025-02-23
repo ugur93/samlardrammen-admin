@@ -6,7 +6,6 @@ import {
     Box,
     Button,
     Checkbox,
-    Chip,
     Container,
     Dialog,
     DialogActions,
@@ -16,26 +15,24 @@ import {
     FormControlLabel,
     FormLabel,
     IconButton,
-    InputLabel,
     Link,
-    ListItemText,
     Menu,
     MenuItem,
     MenuList,
-    OutlinedInput,
     Paper,
     Radio,
     RadioGroup,
-    Select,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
+    TablePagination,
     TableRow,
     TextField,
     Typography,
 } from '@mui/material';
+import TablePaginationActions from '@mui/material/TablePagination/TablePaginationActions';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import React, { useMemo, useState } from 'react';
 import { Controller, FormProvider, SubmitHandler, useForm } from 'react-hook-form';
@@ -157,6 +154,8 @@ const MembersTable: React.FC = () => {
     const [selectedOptions, setSelectedOptions] = React.useState<FilterOption[]>([{ label: 'Alle', value: 'all' }]);
     const [orderBy, setOrderBy] = React.useState<keyof MembersTableData>('name');
     const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean | undefined>(false);
+    const [rowsPerPage, setRowsPerPage] = useState<number>(20);
+    const [page, setPage] = useState<number>(0);
 
     function mapPersondetailsToTableData(personDetails: PersonDetails): MembersTableData {
         return {
@@ -179,8 +178,9 @@ const MembersTable: React.FC = () => {
         () =>
             [...data.map(mapPersondetailsToTableData)]
                 .sort(getComparator(order, orderBy))
-                .filter((d) => filterOption(d, selectedOptions)),
-        [order, orderBy, selectedOptions]
+                .filter((d) => filterOption(d, selectedOptions))
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+        [order, orderBy, selectedOptions, data, rowsPerPage, page]
     );
     const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof MembersTableData) => {
         const isAsc = orderBy === property && order === 'asc';
@@ -190,6 +190,19 @@ const MembersTable: React.FC = () => {
     const createSortHandler = (property: keyof MembersTableData) => (event: React.MouseEvent<unknown>) => {
         handleRequestSort(event, property);
     };
+
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+    function copyMailListToClipboard() {
+        const mailList = [...data.map(mapPersondetailsToTableData)]
+            .sort(getComparator(order, orderBy))
+            .filter((d) => filterOption(d, selectedOptions))
+            .map((d) => d.email)
+            .join(';');
+        navigator.clipboard.writeText(mailList);
+    }
     return (
         <Container sx={{ mt: 4 }}>
             <Typography variant="h4" gutterBottom color="black">
@@ -200,72 +213,103 @@ const MembersTable: React.FC = () => {
                     Legg til medlem
                 </Button>
 
-                <DenseMenu selectedOptions={selectedOptions} onChange={setSelectedOptions} options={filterOptions} />
+                <div className="flex flex-row items-center">
+                    <Button onClick={copyMailListToClipboard} variant="text">
+                        Kopier mailliste
+                    </Button>
+                    <DenseMenu
+                        selectedOptions={selectedOptions}
+                        onChange={setSelectedOptions}
+                        options={filterOptions}
+                    />
+                </div>
             </div>
 
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            {headCells.map((headCell) => (
-                                <TableCell key={headCell.id}>
-                                    <TableSortLabel
-                                        active={orderBy === headCell.id}
-                                        direction={orderBy === headCell.id ? order : 'asc'}
-                                        className={headCell.className}
-                                        onClick={createSortHandler(headCell.id)}
-                                    >
-                                        {headCell.label}
-                                    </TableSortLabel>
-                                </TableCell>
-                            ))}
+            <Paper>
+                <TableContainer component={Paper} sx={{ maxHeight: 840 }}>
+                    <Table stickyHeader size="small">
+                        <TableHead>
+                            <TableRow>
+                                {headCells.map((headCell) => (
+                                    <TableCell key={headCell.id}>
+                                        <TableSortLabel
+                                            active={orderBy === headCell.id}
+                                            direction={orderBy === headCell.id ? order : 'asc'}
+                                            className={headCell.className}
+                                            onClick={createSortHandler(headCell.id)}
+                                        >
+                                            {headCell.label}
+                                        </TableSortLabel>
+                                    </TableCell>
+                                ))}
 
-                            <TableCell></TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {visibleRows?.map((personDetails) => (
-                            <TableRow key={personDetails.id}>
-                                <TableCell className="w-[150px]">
-                                    <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
-                                </TableCell>
-                                <TableCell>{personDetails.age}</TableCell>
-                                <TableCell>{personDetails.birthdate}</TableCell>
-                                <TableCell>{personDetails.email}</TableCell>
-                                <TableCell>{personDetails.gender}</TableCell>
-                                <TableCell>
-                                    <table>
-                                        <tbody>
-                                            {personDetails.membership?.map((m) => (
-                                                <tr key={m.organization.organization.id}>
-                                                    <td>{m.organization.organization.name}</td>
-                                                    <td className="w-[10px]">
-                                                        {m.paymentDetails.some((d) => d.payment_state == 'paid') ? (
-                                                            <CheckIcon color="primary" />
-                                                        ) : (
-                                                            <MoneyOffIcon color="error" />
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </TableCell>
-                                <TableCell>
-                                    <IconButton
-                                        onClick={() =>
-                                            setCreateOrEdit(data.find((p) => p.person.id == personDetails.id))
-                                        }
-                                    >
-                                        <EditIcon />
-                                    </IconButton>
-                                </TableCell>
+                                <TableCell></TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            <Dialog open={createOrEdit} keepMounted onClose={() => setCreateOrEdit(false)}>
+                        </TableHead>
+                        <TableBody>
+                            {visibleRows?.map((personDetails) => (
+                                <TableRow key={personDetails.id}>
+                                    <TableCell className="w-[150px]">
+                                        <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
+                                    </TableCell>
+                                    <TableCell>{personDetails.age}</TableCell>
+                                    <TableCell>{personDetails.birthdate}</TableCell>
+                                    <TableCell>{personDetails.email}</TableCell>
+                                    <TableCell>{personDetails.gender}</TableCell>
+                                    <TableCell>
+                                        <table>
+                                            <tbody>
+                                                {personDetails.membership?.map((m) => (
+                                                    <tr key={m.organization.organization.id}>
+                                                        <td>{m.organization.organization.name}</td>
+                                                        <td className="w-[10px]">
+                                                            {m.paymentDetails.some((d) => d.payment_state == 'paid') ? (
+                                                                <CheckIcon color="primary" />
+                                                            ) : (
+                                                                <MoneyOffIcon color="error" />
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </TableCell>
+                                    <TableCell>
+                                        <IconButton
+                                            onClick={() =>
+                                                setCreateOrEdit(data.find((p) => p.person.id == personDetails.id))
+                                            }
+                                        >
+                                            <EditIcon />
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+                <TablePagination
+                    rowsPerPageOptions={[5, 10, 25, { label: 'Alle', value: -1 }]}
+                    colSpan={7}
+                    count={data.length}
+                    rowsPerPage={rowsPerPage}
+                    labelRowsPerPage="Rader per side"
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} av ${count}`}
+                    page={page}
+                    slotProps={{
+                        select: {
+                            inputProps: {
+                                'aria-label': 'rows per page',
+                            },
+                            native: true,
+                        },
+                    }}
+                    onPageChange={(e, page) => setPage(page)}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    ActionsComponent={TablePaginationActions}
+                />
+            </Paper>
+            <Dialog open={createOrEdit !== false} keepMounted onClose={() => setCreateOrEdit(false)}>
                 <React.Suspense>
                     {createOrEdit !== false && (
                         <CreateOrEditUserDialog
@@ -304,6 +348,7 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
         register,
         handleSubmit,
         reset,
+        setValue,
         formState: { errors },
         control,
         watch,
@@ -383,36 +428,34 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
                                 {errors.gender && <p style={{ color: 'red' }}>{errors.gender.message}</p>}
                             </FormControl>
                         </div>
-                        <FormControl fullWidth margin="dense" sx={{ mt: 2 }}>
-                            <InputLabel id="organizations-label">Medlemskap</InputLabel>
-                            <Controller
-                                control={control}
-                                name="organizations"
-                                render={({ field }) => (
-                                    <Select
-                                        {...field}
-                                        labelId="organizations-label"
-                                        multiple
-                                        value={organizations}
-                                        input={<OutlinedInput label="Medlemskap" />}
-                                        renderValue={(organization) => (
-                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                {organization?.map((value) => {
-                                                    const org = organizationsList.find((org) => org.id === value);
-                                                    return <Chip key={value} label={org?.name || value} />;
-                                                })}
-                                            </Box>
-                                        )}
-                                    >
+                        <FormControl fullWidth margin="dense" className="mb-4">
+                            <FormLabel component="legend">Medlemskap</FormLabel>
+
+                            <TableContainer>
+                                <Table size={'small'}>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell className="w-[55px]">Medlem</TableCell>
+                                            <TableCell>Organisasjon</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+
+                                    <TableBody>
                                         {organizationsList.map((org) => (
-                                            <MenuItem key={org.id} value={org.id}>
-                                                <Checkbox checked={organizations.includes(org.id)} />
-                                                <ListItemText primary={org.name} />
-                                            </MenuItem>
+                                            <TableRow key={org.id}>
+                                                <TableCell>
+                                                    <Checkbox
+                                                        {...register(`organizations`)}
+                                                        value={org.id}
+                                                        defaultChecked={organizations.includes(org.id)}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>{org.name}</TableCell>
+                                            </TableRow>
                                         ))}
-                                    </Select>
-                                )}
-                            />
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
                         </FormControl>
                         <FormLabel component="legend">Addresse (valgfri)</FormLabel>
                         <Box>
