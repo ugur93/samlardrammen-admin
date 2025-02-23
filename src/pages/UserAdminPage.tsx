@@ -208,6 +208,24 @@ const MembersTable: React.FC = () => {
             <Typography variant="h4" gutterBottom color="black">
                 Medlemmer
             </Typography>
+            <Box className="pb-2 text-black flex flex-row gap-4">
+                <Box className="flex flex-row gap-2 items-center">
+                    <Typography fontSize={12} variant="subtitle1">
+                        Antall medlemmer:
+                    </Typography>
+                    <Typography fontSize={12} variant="body1">
+                        {data.length}
+                    </Typography>
+                </Box>
+                <Box className="flex flex-row gap-2 items-center">
+                    <Typography fontSize={12} variant="subtitle1">
+                        Antall betalende:
+                    </Typography>
+                    <Typography fontSize={12} variant="body1">
+                        {data.map(mapPersondetailsToTableData).filter((d) => d.age >= 16).length}
+                    </Typography>
+                </Box>
+            </Box>
             <div className="flex justify-between">
                 <Button variant="contained" color="primary" onClick={() => setCreateOrEdit(true)} sx={{ mb: 2 }}>
                     Legg til medlem
@@ -290,12 +308,14 @@ const MembersTable: React.FC = () => {
                 </TableContainer>
                 <TablePagination
                     rowsPerPageOptions={[5, 10, 25, { label: 'Alle', value: -1 }]}
-                    colSpan={7}
                     count={data.length}
+                    component="div"
                     rowsPerPage={rowsPerPage}
                     labelRowsPerPage="Rader per side"
                     labelDisplayedRows={({ from, to, count }) => `${from}-${to} av ${count}`}
                     page={page}
+                    showFirstButton
+                    showLastButton
                     slotProps={{
                         select: {
                             inputProps: {

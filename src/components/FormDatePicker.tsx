@@ -8,7 +8,7 @@ type FormDatePickerProps = {
     disabled?: boolean;
     editable?: boolean;
 };
-export function FormDatePicker({ name, label, editable }: FormDatePickerProps) {
+export function FormDatePicker({ name, label, editable = true }: FormDatePickerProps) {
     const {
         control,
         getValues,
@@ -30,7 +30,7 @@ export function FormDatePicker({ name, label, editable }: FormDatePickerProps) {
                         inputRef={field.ref}
                         label={label}
                         slotProps={{
-                            textField: { size: 'medium', helperText: errors[name]?.message },
+                            textField: { size: 'small', helperText: errors[name]?.message },
                         }}
                         onChange={(date) => {
                             field.onChange(date?.toISOString());

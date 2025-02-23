@@ -8,7 +8,7 @@ import {
     LoginFormValues,
     UserFormFields,
 } from '../types/formTypes';
-import { PersonDetails } from '../types/personTypes';
+import { mapPersonResponse, PersonDetails } from '../types/personTypes';
 
 export const QueryKeys = {
     loggedInUser: ['logged-in-user'],
@@ -62,19 +62,7 @@ const fetchPersonByEmail = async (email?: string): Promise<PersonDetails | null>
         console.error(error);
         return null;
     }
-    return {
-        person: person,
-        membership: person.membership.map((membership) => ({
-            membership: membership,
-            paymentDetails: membership.payment_info,
-            organization: {
-                organization: membership.organization!,
-                paymentDetails: membership.organization!.payment_detail,
-            },
-        })),
-        address: person.address ? person.address[0] : undefined,
-        name: `${person.firstname} ${person.lastname}`,
-    };
+    return mapPersonResponse(person);
 };
 const fetchPersonById = async (user_id?: string): Promise<PersonDetails | null> => {
     if (!user_id) return null;
@@ -87,19 +75,7 @@ const fetchPersonById = async (user_id?: string): Promise<PersonDetails | null> 
         console.error(error);
         return null;
     }
-    return {
-        person: person,
-        membership: person.membership.map((membership) => ({
-            membership: membership,
-            paymentDetails: membership.payment_info,
-            organization: {
-                organization: membership.organization!,
-                paymentDetails: membership.organization!.payment_detail,
-            },
-        })),
-        address: person.address ? person.address[0] : undefined,
-        name: `${person.firstname} ${person.lastname}`,
-    };
+    return mapPersonResponse(person);
 };
 const fetchPersonByUserIdOrEmail = async (user_id?: string, email?: string): Promise<PersonDetails | null> => {
     const personDetailsUser = await fetchPersonByUserId(user_id);
@@ -117,19 +93,7 @@ const fetchPersonByUserId = async (user_id?: string): Promise<PersonDetails | nu
         console.error(error);
         return null;
     }
-    return {
-        person: person,
-        membership: person.membership.map((membership) => ({
-            membership: membership,
-            paymentDetails: membership.payment_info,
-            organization: {
-                organization: membership.organization!,
-                paymentDetails: membership.organization!.payment_detail,
-            },
-        })),
-        address: person.address ? person.address[0] : undefined,
-        name: `${person.firstname} ${person.lastname}`,
-    };
+    return mapPersonResponse(person);
 };
 export function useGetPersons() {
     const { data } = useSuspenseQuery<PersonDetails[], Error>({
@@ -149,7 +113,7 @@ export function useGetPersonById(id?: string) {
     return data;
 }
 export function useGetPersonByEmail(email: string) {
-    const { data } = useSuspenseQuery<Database['public']['Tables']['person']['Row'][], Error>({
+    const { data } = useSuspenseQuery<PersonDetails | null, Error>({
         queryKey: QueryKeys.fetchPersonByEmail(email), // Unique key for the query
         queryFn: () => fetchPersonByEmail(email), // Function to fetch data
     });
@@ -233,10 +197,10 @@ export function useCreatePersonMutation() {
 
 async function updateMembership(personId: number, personForm: UserFormFields, existingPerson?: PersonDetails | null) {
     const removeMembership = existingPerson?.membership?.filter(
-        (membership) => !personForm.organizations.includes(membership.membership.organization_id!)
+        (membership) => !personForm.organizations.includes(membership.membership.organization_id!.toString())
     );
     for (const membership of removeMembership ?? []) {
-        console.log('Removing membership for person and organization', personId, membership);
+        console.log(`Removing membership ${membership} from person ${personId}`, personId, membership);
         await supabase.from('membership').update({ is_member: false }).filter('id', 'eq', membership.membership.id);
     }
 

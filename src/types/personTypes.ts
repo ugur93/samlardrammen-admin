@@ -7,6 +7,17 @@ export type PaymentDetailDatabase = Database['public']['Tables']['payment_detail
 export type MembershipDatabase = Database['public']['Tables']['membership']['Row'];
 export type PaymentInfoDatabase = Database['public']['Tables']['payment_info']['Row'];
 
+type OrganzationResponse = OrganizationsDatabase & {
+    payment_detail: PaymentDetailDatabase[];
+};
+type MembershipResponse = MembershipDatabase & {
+    organization: OrganzationResponse | null;
+    payment_info: PaymentInfoDatabase[];
+};
+type PersonResponse = PersonDatabase & {
+    membership?: MembershipResponse[];
+    address?: AdressDatabase[];
+};
 export interface PersonDetails {
     person: PersonDatabase;
     address?: AdressDatabase;
@@ -34,4 +45,21 @@ export function genderVisningsnavn(gender: PersonDetails): string {
             return 'Kvinne';
     }
     return 'Ukjent';
+}
+
+export function mapPersonResponse(person?: PersonResponse | null): PersonDetails | null {
+    if (!person) return null;
+    return {
+        person: person as PersonDatabase,
+        membership: person.membership?.map((membership) => ({
+            membership: membership,
+            paymentDetails: membership.payment_info,
+            organization: {
+                organization: membership.organization!,
+                paymentDetails: membership.organization!.payment_detail,
+            },
+        })),
+        address: person.address ? person.address[0] : undefined,
+        name: `${person.firstname} ${person.lastname}`,
+    };
 }
