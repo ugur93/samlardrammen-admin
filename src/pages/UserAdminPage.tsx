@@ -31,6 +31,8 @@ import {
     TableRow,
     TextField,
     Typography,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import TablePaginationActions from '@mui/material/TablePagination/TablePaginationActions';
 import TableSortLabel from '@mui/material/TableSortLabel';
@@ -156,7 +158,8 @@ const MembersTable: React.FC = () => {
     const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean | undefined>(false);
     const [rowsPerPage, setRowsPerPage] = useState<number>(20);
     const [page, setPage] = useState<number>(0);
-
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     function mapPersondetailsToTableData(personDetails: PersonDetails): MembersTableData {
         return {
             id: personDetails.person.id,
@@ -244,7 +247,7 @@ const MembersTable: React.FC = () => {
             </div>
 
             <Paper>
-                <TableContainer component={Paper} sx={{ maxHeight: 840 }}>
+                <TableContainer component={Paper} sx={{ maxHeight: isMobile ? 500 : 840 }}>
                     <Table stickyHeader size="small">
                         <TableHead>
                             <TableRow>
@@ -307,7 +310,7 @@ const MembersTable: React.FC = () => {
                     </Table>
                 </TableContainer>
                 <TablePagination
-                    rowsPerPageOptions={[5, 10, 25, { label: 'Alle', value: -1 }]}
+                    rowsPerPageOptions={[10, 20, 50, { label: 'Alle', value: -1 }]}
                     count={data.length}
                     component="div"
                     rowsPerPage={rowsPerPage}
