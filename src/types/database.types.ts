@@ -1,3 +1,6 @@
+Need to install the following packages:
+supabase@2.15.8
+Ok to proceed? (y) 
 export type Json =
   | string
   | number
@@ -52,6 +55,8 @@ export type Database = {
           created_at: string
           id: number
           is_member: boolean
+          membership_end_date: string | null
+          membership_end_reason: string | null
           organization_id: number | null
           person_id: number | null
         }
@@ -59,6 +64,8 @@ export type Database = {
           created_at?: string
           id?: number
           is_member?: boolean
+          membership_end_date?: string | null
+          membership_end_reason?: string | null
           organization_id?: number | null
           person_id?: number | null
         }
@@ -66,6 +73,8 @@ export type Database = {
           created_at?: string
           id?: number
           is_member?: boolean
+          membership_end_date?: string | null
+          membership_end_reason?: string | null
           organization_id?: number | null
           person_id?: number | null
         }
@@ -116,6 +125,7 @@ export type Database = {
           created_at: string
           deleted: boolean
           id: number
+          late_fee: number | null
           organization_id: number | null
           payment_deadline: string | null
           year: number | null
@@ -125,6 +135,7 @@ export type Database = {
           created_at?: string
           deleted?: boolean
           id?: number
+          late_fee?: number | null
           organization_id?: number | null
           payment_deadline?: string | null
           year?: number | null
@@ -134,6 +145,7 @@ export type Database = {
           created_at?: string
           deleted?: boolean
           id?: number
+          late_fee?: number | null
           organization_id?: number | null
           payment_deadline?: string | null
           year?: number | null

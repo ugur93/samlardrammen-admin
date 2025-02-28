@@ -114,6 +114,7 @@ export function useCreatePaymentDetailApi() {
                 id: payment.id ?? undefined,
                 organization_id: payment.organization_id,
                 amount: payment.amount,
+                late_fee: payment.late_fee,
                 payment_deadline: payment.deadline,
                 year: payment.year,
             };

@@ -16,6 +16,7 @@ import {
     FormLabel,
     IconButton,
     Link,
+    List,
     Menu,
     MenuItem,
     MenuList,
@@ -36,10 +37,11 @@ import {
 } from '@mui/material';
 import TablePaginationActions from '@mui/material/TablePagination/TablePaginationActions';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import React, { useMemo, useState } from 'react';
+import React, { Fragment, useMemo, useState } from 'react';
 import { Controller, FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useCreatePersonMutation, useGetPersons } from '../api/usePersonsApi';
+import CustomListItemText from '../components/CustomListItemText';
 import { FormDatePicker } from '../components/FormDatePicker';
 import { base } from '../context/AppContext';
 import { mapToFormValues, UserFormFields } from '../types/formTypes';
@@ -106,7 +108,26 @@ const headCells: readonly HeadCell[] = [
         className: 'w-[300px]',
     },
 ];
-
+const headCellsMobile: readonly HeadCell[] = [
+    {
+        id: 'name',
+        numeric: false,
+        disablePadding: true,
+        label: 'Navn',
+    },
+    {
+        id: 'age',
+        numeric: false,
+        disablePadding: false,
+        label: 'Alder',
+    },
+    {
+        id: 'email',
+        numeric: false,
+        disablePadding: false,
+        label: 'Email',
+    },
+];
 const filterOptions: FilterOption[] = [
     {
         label: 'Alle',
@@ -156,10 +177,11 @@ const MembersTable: React.FC = () => {
     const [selectedOptions, setSelectedOptions] = React.useState<FilterOption[]>([{ label: 'Alle', value: 'all' }]);
     const [orderBy, setOrderBy] = React.useState<keyof MembersTableData>('name');
     const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean | undefined>(false);
-    const [rowsPerPage, setRowsPerPage] = useState<number>(20);
     const [page, setPage] = useState<number>(0);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [rowsPerPage, setRowsPerPage] = useState<number>(30);
+
     function mapPersondetailsToTableData(personDetails: PersonDetails): MembersTableData {
         return {
             id: personDetails.person.id,
@@ -248,69 +270,26 @@ const MembersTable: React.FC = () => {
 
             <Paper>
                 <TableContainer component={Paper} sx={{ maxHeight: isMobile ? 500 : 840 }}>
-                    <Table stickyHeader size="small">
-                        <TableHead>
-                            <TableRow>
-                                {headCells.map((headCell) => (
-                                    <TableCell key={headCell.id}>
-                                        <TableSortLabel
-                                            active={orderBy === headCell.id}
-                                            direction={orderBy === headCell.id ? order : 'asc'}
-                                            className={headCell.className}
-                                            onClick={createSortHandler(headCell.id)}
-                                        >
-                                            {headCell.label}
-                                        </TableSortLabel>
-                                    </TableCell>
-                                ))}
-
-                                <TableCell></TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {visibleRows?.map((personDetails) => (
-                                <TableRow key={personDetails.id}>
-                                    <TableCell className="w-[150px]">
-                                        <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
-                                    </TableCell>
-                                    <TableCell>{personDetails.age}</TableCell>
-                                    <TableCell>{personDetails.birthdate}</TableCell>
-                                    <TableCell>{personDetails.email}</TableCell>
-                                    <TableCell>{personDetails.gender}</TableCell>
-                                    <TableCell>
-                                        <table>
-                                            <tbody>
-                                                {personDetails.membership?.map((m) => (
-                                                    <tr key={m.organization.organization.id}>
-                                                        <td>{m.organization.organization.name}</td>
-                                                        <td className="w-[10px]">
-                                                            {m.paymentDetails.some((d) => d.payment_state == 'paid') ? (
-                                                                <CheckIcon color="primary" />
-                                                            ) : (
-                                                                <MoneyOffIcon color="error" />
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </TableCell>
-                                    <TableCell>
-                                        <IconButton
-                                            onClick={() =>
-                                                setCreateOrEdit(data.find((p) => p.person.id == personDetails.id))
-                                            }
-                                        >
-                                            <EditIcon />
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    {isMobile ? (
+                        <TableMobile
+                            rows={visibleRows}
+                            order={order}
+                            orderBy={orderBy}
+                            setCreateOrEdit={setCreateOrEdit}
+                            createSortHandler={createSortHandler}
+                        />
+                    ) : (
+                        <TableDesktop
+                            rows={visibleRows}
+                            order={order}
+                            orderBy={orderBy}
+                            setCreateOrEdit={setCreateOrEdit}
+                            createSortHandler={createSortHandler}
+                        />
+                    )}
                 </TableContainer>
                 <TablePagination
-                    rowsPerPageOptions={[10, 20, 50, { label: 'Alle', value: -1 }]}
+                    rowsPerPageOptions={isMobile ? [] : [10, 20, 50, { label: 'Alle', value: -1 }]}
                     count={data.length}
                     component="div"
                     rowsPerPage={rowsPerPage}
@@ -345,6 +324,161 @@ const MembersTable: React.FC = () => {
         </Container>
     );
 };
+
+interface TableProps {
+    rows: MembersTableData[];
+    orderBy: keyof MembersTableData;
+    order: Order;
+    createSortHandler: (property: keyof MembersTableData) => (event: React.MouseEvent<unknown>) => void;
+    setCreateOrEdit: (PersonDetails: PersonDetails | boolean | undefined) => void;
+}
+function TableMobile({ rows, orderBy, order, createSortHandler, setCreateOrEdit }: TableProps) {
+    const data = useGetPersons();
+
+    return (
+        <Table stickyHeader size="small" padding="normal" className="!w-[300px]">
+            <TableHead>
+                <TableRow>
+                    {headCellsMobile.map((headCell) => (
+                        <TableCell key={headCell.id} size="small">
+                            <TableSortLabel
+                                active={orderBy === headCell.id}
+                                direction={orderBy === headCell.id ? order : 'asc'}
+                                className={headCell.className}
+                                onClick={createSortHandler(headCell.id)}
+                            >
+                                {headCell.label}
+                            </TableSortLabel>
+                        </TableCell>
+                    ))}
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {rows?.map((personDetails) => (
+                    <Fragment key={personDetails.id}>
+                        <TableRow key={personDetails.id}>
+                            <TableCell>
+                                <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
+                            </TableCell>
+                            <TableCell>{personDetails.age}</TableCell>
+                            <TableCell>{personDetails.email}</TableCell>
+                        </TableRow>
+                        <TableRow key={personDetails.id}>
+                            <TableCell colSpan={3}>
+                                <Box sx={{ margin: 1 }}>
+                                    <List dense disablePadding>
+                                        <CustomListItemText primary={'Kjønn'} secondary={personDetails.gender} />
+                                        <CustomListItemText
+                                            primary={'Medlemskap/Betaling'}
+                                            secondaryBelow
+                                            secondary={
+                                                <table>
+                                                    <tbody>
+                                                        {personDetails.membership?.map((m) => (
+                                                            <tr key={m.organization.organization.id}>
+                                                                <td>{m.organization.organization.name}</td>
+                                                                <td className="w-[10px]">
+                                                                    {m.paymentDetails.some(
+                                                                        (d) => d.payment_state == 'paid'
+                                                                    ) ? (
+                                                                        <CheckIcon color="primary" />
+                                                                    ) : (
+                                                                        <MoneyOffIcon color="error" />
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            }
+                                        />
+                                        <CustomListItemText
+                                            secondary={
+                                                <IconButton
+                                                    onClick={() =>
+                                                        setCreateOrEdit(
+                                                            data.find((p) => p.person.id == personDetails.id)
+                                                        )
+                                                    }
+                                                >
+                                                    <EditIcon />
+                                                </IconButton>
+                                            }
+                                        />
+                                    </List>
+                                </Box>
+                            </TableCell>
+                        </TableRow>
+                    </Fragment>
+                ))}
+            </TableBody>
+        </Table>
+    );
+}
+function TableDesktop({ rows, orderBy, order, createSortHandler, setCreateOrEdit }: TableProps) {
+    const data = useGetPersons();
+
+    return (
+        <Table stickyHeader size="small">
+            <TableHead>
+                <TableRow>
+                    {headCells.map((headCell) => (
+                        <TableCell key={headCell.id}>
+                            <TableSortLabel
+                                active={orderBy === headCell.id}
+                                direction={orderBy === headCell.id ? order : 'asc'}
+                                className={headCell.className}
+                                onClick={createSortHandler(headCell.id)}
+                            >
+                                {headCell.label}
+                            </TableSortLabel>
+                        </TableCell>
+                    ))}
+
+                    <TableCell></TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {rows?.map((personDetails) => (
+                    <TableRow key={personDetails.id}>
+                        <TableCell className="w-[150px]">
+                            <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
+                        </TableCell>
+                        <TableCell>{personDetails.age}</TableCell>
+                        <TableCell>{personDetails.birthdate}</TableCell>
+                        <TableCell>{personDetails.email}</TableCell>
+                        <TableCell>{personDetails.gender}</TableCell>
+                        <TableCell>
+                            <table>
+                                <tbody>
+                                    {personDetails.membership?.map((m) => (
+                                        <tr key={m.organization.organization.id}>
+                                            <td>{m.organization.organization.name}</td>
+                                            <td className="w-[10px]">
+                                                {m.paymentDetails.some((d) => d.payment_state == 'paid') ? (
+                                                    <CheckIcon color="primary" />
+                                                ) : (
+                                                    <MoneyOffIcon color="error" />
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </TableCell>
+                        <TableCell>
+                            <IconButton
+                                onClick={() => setCreateOrEdit(data.find((p) => p.person.id == personDetails.id))}
+                            >
+                                <EditIcon />
+                            </IconButton>
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    );
+}
 
 interface CreateUserDialogProps {
     open: boolean;

@@ -1,14 +1,30 @@
-import { AppBar, Box, Button, CircularProgress, Container, Link, Toolbar, Typography } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import {
+    AppBar,
+    Box,
+    Button,
+    CircularProgress,
+    Container,
+    IconButton,
+    Link,
+    Menu,
+    MenuItem,
+    Toolbar,
+    Typography,
+    useMediaQuery,
+    useTheme,
+} from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider/LocalizationProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import 'dayjs/locale/en-gb';
-import { PropsWithChildren, Suspense, useEffect, useRef } from 'react';
+import React, { PropsWithChildren, Suspense, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useLoggedInUser, useLogout } from '../api/usePersonsApi';
 import { AppContextProvider, defaultPages, pages, useAppContext } from '../context/AppContext';
 import LoginMagicLinkPage from './LoginMagicLink';
+
 export const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
@@ -59,8 +75,6 @@ function LoginProvider({ children }: PropsWithChildren<unknown>) {
 }
 
 function CustomAppBar() {
-    const { pages } = useAppContext();
-    const navigate = useNavigate();
     return (
         <AppBar position="static">
             <Container maxWidth="xl">
@@ -81,21 +95,80 @@ function CustomAppBar() {
                         Samlardrammen
                     </Typography>
 
-                    <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-                        {pages.map((page) => (
-                            <Button
-                                key={page.label}
-                                sx={{ my: 2, color: 'white', display: 'block' }}
-                                onClick={() => navigate(page.url)}
-                            >
-                                {page.label}
-                            </Button>
-                        ))}
-                    </Box>
+                    <ToolbarMenu />
+
                     <UserButton />
                 </Toolbar>
             </Container>
         </AppBar>
+    );
+}
+
+function ToolbarMenu() {
+    const theme = useTheme();
+    const { pages } = useAppContext();
+
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const navigate = useNavigate();
+
+    const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    if (!isMobile) {
+        return (
+            <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+                {pages.map((page) => (
+                    <Button
+                        key={page.label}
+                        sx={{ my: 2, color: 'white', display: 'block' }}
+                        onClick={() => navigate(page.url)}
+                    >
+                        {page.label}
+                    </Button>
+                ))}
+            </Box>
+        );
+    }
+    return (
+        <>
+            <IconButton
+                size="large"
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleMenu}
+                color="inherit"
+            >
+                <MenuIcon />
+            </IconButton>
+            <Menu
+                id="menu-appbar"
+                anchorEl={anchorEl}
+                anchorOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                }}
+                keepMounted
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                }}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
+            >
+                {pages.map((page) => (
+                    <MenuItem key={page.label} sx={{ my: 2, display: 'block' }} onClick={() => navigate(page.url)}>
+                        {page.label}
+                    </MenuItem>
+                ))}
+            </Menu>
+        </>
     );
 }
 
@@ -112,7 +185,7 @@ function UserButton() {
                     onClick={() => logoutUser.mutate()}
                     className="!bg-red-100 text-white py-1 px-3 rounded hover:!bg-red-200"
                 >
-                    Çıkış
+                    Logg ut
                 </Button>
             </div>
         );
@@ -122,7 +195,7 @@ function UserButton() {
             className=" text-white py-1 px-3 rounded hover:bg-blue-600"
             onClick={() => (window.location.href = '/login')}
         >
-            Giriş
+            Logg inn
         </Button>
     );
 }

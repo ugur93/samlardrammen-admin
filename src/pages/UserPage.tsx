@@ -8,6 +8,7 @@ import {
     FormControl,
     IconButton,
     InputLabel,
+    List,
     MenuItem,
     Select,
     Table,
@@ -17,16 +18,21 @@ import {
     TableRow,
     TextField,
     Typography,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
+
 import { format } from 'date-fns';
-import React, { useEffect, useState } from 'react';
+import React, { Fragment, useEffect, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useParams } from 'react-router';
 import { useAddOrUpdatePaymentStatus, useCreatePersonMutation, useGetPersonById } from '../api/usePersonsApi';
+import CustomListItemText from '../components/CustomListItemText';
 import { FormDatePicker } from '../components/FormDatePicker';
 import { useAppContext } from '../context/AppContext';
 import { CreateOrUpdateUserPaymentDetailsFormFields, mapToFormValues, UserFormFields } from '../types/formTypes';
-import { MembershipDetails, PaymentDetailDatabase, PersonDetails } from '../types/personTypes';
+import { AdressDatabase, MembershipDetails, PaymentDetailDatabase, PersonDetails } from '../types/personTypes';
 import PageTemplate from './PageTemplate';
 export default function UserDetailsPage() {
     return (
@@ -68,6 +74,10 @@ export const UserDetails: React.FC = () => {
         reset(mapToFormValues(getUserDetails()));
     };
 
+    function formatterAdresse(adresse?: AdressDatabase) {
+        const toAdressLine = (tekst?: string | null) => (tekst ? `${tekst},` : '');
+        return `${toAdressLine(adresse?.addressLine1)}${toAdressLine(adresse?.addressLine2)}${toAdressLine(adresse?.city)}${toAdressLine(adresse?.postcode)}`;
+    }
     const details = getUserDetails();
     if (!details) return null;
     return (
@@ -158,28 +168,28 @@ export const UserDetails: React.FC = () => {
                             </FormProvider>
                         ) : (
                             <div>
-                                <span>
-                                    <p>
-                                        <strong>Navn:</strong> {details.name}
-                                    </p>
-                                    <p>
-                                        <strong>Fødselsdato:</strong>{' '}
-                                        {details.person.birthdate
-                                            ? format(new Date(details.person.birthdate), 'dd/MM/yyyy')
-                                            : ''}
-                                    </p>
-                                    <p>
-                                        <strong>Email:</strong> {details.person.email}
-                                    </p>
-                                    <p>
-                                        <strong>Telefon:</strong> {details.person.phone_number}
-                                    </p>
-                                    <p>
-                                        <strong>Address:</strong> {details.address?.addressLine1}{' '}
-                                        {details.address?.addressLine2}, {details.address?.city},{' '}
-                                        {details.address?.postcode}
-                                    </p>
-                                </span>
+                                <Grid container spacing={2}>
+                                    <List dense disablePadding>
+                                        <CustomListItemText primary={'Navn'} secondary={details.name} />
+                                        <CustomListItemText
+                                            primary={'Fødselsdato'}
+                                            secondary={
+                                                details.person.birthdate
+                                                    ? format(new Date(details.person.birthdate), 'dd/MM/yyyy')
+                                                    : ''
+                                            }
+                                        />
+                                        <CustomListItemText primary={'Email'} secondary={details.person.email} />
+                                        <CustomListItemText
+                                            primary={'Telefon'}
+                                            secondary={details.person.phone_number}
+                                        />
+                                        <CustomListItemText
+                                            primary={'Adresse'}
+                                            secondary={formatterAdresse(details.address)}
+                                        />
+                                    </List>
+                                </Grid>
                                 <Box className="flex flex-row gap-2 pt-3">
                                     {!isEditing && (
                                         <Button variant="contained" onClick={handleEditClick}>
@@ -200,7 +210,9 @@ export const UserDetails: React.FC = () => {
 
 function MembershipDetailsView({ person }: { person: PersonDetails }) {
     const membership = person?.membership;
-
+    const { user } = useAppContext();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     return (
         <>
             <Typography variant="h4" className="!mb-4 text-black">
@@ -232,49 +244,11 @@ function MembershipDetailsView({ person }: { person: PersonDetails }) {
                                                 {membership.organization.organization.bank_account_number}
                                             </p>
                                         </div>
-                                        <Table className="w-full">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>År</TableCell>
-                                                    <TableCell>Beløp</TableCell>
-                                                    <TableCell>Status</TableCell>
-                                                    <TableCell></TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {membership.organization.paymentDetails
-                                                    .filter((p) => {
-                                                        const userPaymentInfo = membership.paymentDetails.find(
-                                                            (pd) => pd.payment_detail_id === p.id
-                                                        );
-                                                        return !p.deleted || userPaymentInfo?.payment_state == 'paid';
-                                                    })
-                                                    .map((payment, index) => {
-                                                        const userPaymentInfo = membership.paymentDetails.find(
-                                                            (pd) => pd.payment_detail_id === payment.id
-                                                        );
-                                                        return (
-                                                            <TableRow
-                                                                key={index}
-                                                                className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
-                                                            >
-                                                                <TableCell>{payment.year}</TableCell>
-                                                                <TableCell>
-                                                                    NOK{' '}
-                                                                    {(
-                                                                        userPaymentInfo?.amount ?? payment.amount!
-                                                                    ).toFixed(2)}
-                                                                </TableCell>
-                                                                <ViewOrEditPaymentStatus
-                                                                    paymentDetail={payment}
-                                                                    membership={membership}
-                                                                    user={person}
-                                                                />
-                                                            </TableRow>
-                                                        );
-                                                    })}
-                                            </TableBody>
-                                        </Table>
+                                        {isMobile ? (
+                                            <TableMobile membership={membership} person={person} />
+                                        ) : (
+                                            <TableDesktop membership={membership} person={person} />
+                                        )}
                                     </Card>
                                 </div>
                             ))
@@ -284,6 +258,144 @@ function MembershipDetailsView({ person }: { person: PersonDetails }) {
                 </CardContent>
             </Card>
         </>
+    );
+}
+
+interface TableProps {
+    membership: MembershipDetails;
+    person: PersonDetails;
+}
+function TableMobile({ membership, person }: TableProps) {
+    const { user } = useAppContext();
+
+    return (
+        <Table className="w-full">
+            <TableHead>
+                <TableRow>
+                    <TableCell>År</TableCell>
+                    <TableCell>Beløp</TableCell>
+                    <TableCell>Status</TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {membership.organization.paymentDetails
+                    .filter((p) => {
+                        const userPaymentInfo = membership.paymentDetails.find((pd) => pd.payment_detail_id === p.id);
+                        return !p.deleted || userPaymentInfo?.payment_state == 'paid';
+                    })
+                    .map((payment, index) => {
+                        const userPaymentInfo = membership.paymentDetails.find(
+                            (pd) => pd.payment_detail_id === payment.id
+                        );
+                        return (
+                            <Fragment key={index}>
+                                <TableRow
+                                    key={index}
+                                    className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
+                                >
+                                    <TableCell>{payment.year}</TableCell>
+                                    <TableCell>NOK {(userPaymentInfo?.amount ?? payment.amount!).toFixed(2)}</TableCell>
+                                    {user?.roles.includes('admin') ? (
+                                        <ViewOrEditPaymentStatus
+                                            paymentDetail={payment}
+                                            membership={membership}
+                                            user={person}
+                                        />
+                                    ) : (
+                                        <TableCell>
+                                            {userPaymentInfo?.payment_state == 'paid' ? 'Betalt' : 'Ikke betalt'}
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell colSpan={3}>
+                                        <Box sx={{ margin: 1 }}>
+                                            <Grid container spacing={2}>
+                                                <List dense disablePadding>
+                                                    <CustomListItemText
+                                                        primary={'Frist'}
+                                                        secondary={
+                                                            payment.payment_deadline
+                                                                ? format(
+                                                                      new Date(payment.payment_deadline),
+                                                                      'dd/MM/yyyy'
+                                                                  )
+                                                                : ''
+                                                        }
+                                                    />
+                                                    <CustomListItemText
+                                                        primary={'Forsinkelsesgebyr'}
+                                                        secondary={
+                                                            <div className="w-max">
+                                                                NOK {payment.late_fee?.toFixed(2)}
+                                                            </div>
+                                                        }
+                                                    />
+                                                </List>
+                                            </Grid>
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                            </Fragment>
+                        );
+                    })}
+            </TableBody>
+        </Table>
+    );
+}
+function TableDesktop({ membership, person }: TableProps) {
+    const { user } = useAppContext();
+
+    return (
+        <Table className="w-full">
+            <TableHead>
+                <TableRow>
+                    <TableCell>År</TableCell>
+                    <TableCell>Beløp</TableCell>
+                    <TableCell>Frist</TableCell>
+                    <TableCell>Forsinkelsesgebyr</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell></TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {membership.organization.paymentDetails
+                    .filter((p) => {
+                        const userPaymentInfo = membership.paymentDetails.find((pd) => pd.payment_detail_id === p.id);
+                        return !p.deleted || userPaymentInfo?.payment_state == 'paid';
+                    })
+                    .map((payment, index) => {
+                        const userPaymentInfo = getPaymentDetail(payment, membership);
+                        return (
+                            <TableRow
+                                key={index}
+                                className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
+                            >
+                                <TableCell>{payment.year}</TableCell>
+                                <TableCell>NOK {(userPaymentInfo?.amount ?? payment.amount!).toFixed(2)}</TableCell>
+                                <TableCell>
+                                    {' '}
+                                    {payment.payment_deadline
+                                        ? format(new Date(payment.payment_deadline), 'dd/MM/yyyy')
+                                        : ''}
+                                </TableCell>
+                                <TableCell>NOK {payment.late_fee?.toFixed(2)}</TableCell>
+                                {user?.roles.includes('admin') ? (
+                                    <ViewOrEditPaymentStatus
+                                        paymentDetail={payment}
+                                        membership={membership}
+                                        user={person}
+                                    />
+                                ) : (
+                                    <TableCell>
+                                        {userPaymentInfo?.payment_state == 'paid' ? 'Betalt' : 'Ikke betalt'}
+                                    </TableCell>
+                                )}
+                            </TableRow>
+                        );
+                    })}
+            </TableBody>
+        </Table>
     );
 }
 
@@ -298,7 +410,7 @@ function ViewOrEditPaymentStatus({
 }) {
     const [editPayment, setEditPayment] = useState<number>();
     const userPaymentInfoFn = useAddOrUpdatePaymentStatus(user.person.id);
-    const userPaymentInfo = membership.paymentDetails.find((pd) => pd.payment_detail_id === paymentDetail.id);
+    const userPaymentInfo = getPaymentDetail(paymentDetail, membership);
     const paid = userPaymentInfo?.payment_state == 'paid';
     const {
         setError,
@@ -375,4 +487,8 @@ function ViewOrEditPaymentStatus({
             )}
         </>
     );
+}
+
+function getPaymentDetail(paymentDetail: PaymentDetailDatabase, membership: MembershipDetails) {
+    return membership.paymentDetails.find((pd) => pd.payment_detail_id === paymentDetail.id);
 }

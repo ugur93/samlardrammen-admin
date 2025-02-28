@@ -129,7 +129,8 @@ const OrganizationDetailsView: React.FC = () => {
                             <TableHead>
                                 <TableRow>
                                     <TableCell>År</TableCell>
-                                    <TableCell>Kostnad</TableCell>
+                                    <TableCell>Beløp</TableCell>
+                                    <TableCell>Forsinkelsesgebyr</TableCell>
                                     <TableCell>Frist</TableCell>
                                     <TableCell width={'5px'}></TableCell>
                                     <TableCell width={'5px'}></TableCell>
@@ -140,6 +141,7 @@ const OrganizationDetailsView: React.FC = () => {
                                     <TableRow key={detail.id}>
                                         <TableCell>{detail.year}</TableCell>
                                         <TableCell>{detail.amount}</TableCell>
+                                        <TableCell>{detail.late_fee}</TableCell>
                                         <TableCell>
                                             {detail.payment_deadline
                                                 ? new Date(detail.payment_deadline).toLocaleDateString()
@@ -257,14 +259,22 @@ const CreatePaymentDetailnDialog: React.FC<CreateOrganizationDialogProps> = ({
                     />
                     <TextField
                         margin="dense"
-                        label="Betaling"
+                        label="Beløp"
                         type="number"
                         fullWidth
                         {...register('amount')}
                         error={Boolean(errors.amount)}
                         helperText={errors.amount?.message}
                     />
-
+                    <TextField
+                        margin="dense"
+                        label="Forsinkelsesgebyr"
+                        type="number"
+                        fullWidth
+                        {...register('late_fee')}
+                        error={Boolean(errors.late_fee)}
+                        helperText={errors.late_fee?.message}
+                    />
                     <Controller
                         control={control}
                         name="deadline"

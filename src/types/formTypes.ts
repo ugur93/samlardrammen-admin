@@ -81,6 +81,7 @@ export interface CreateOrUpdateOrganizationPaymentDetailFormFields {
     id: number | null;
     organization_id: number;
     amount: number;
+    late_fee: number;
     deadline: string;
     year: number;
 }
@@ -92,6 +93,7 @@ export function mapToPaymentDetails(
         id: paymentDetails?.id ?? undefined,
         organization_id: organizationId,
         amount: paymentDetails?.amount ?? 0,
+        late_fee: paymentDetails?.late_fee ?? 0,
         deadline: paymentDetails?.payment_deadline ?? '',
         year: paymentDetails?.year ?? new Date().getFullYear(),
     };
