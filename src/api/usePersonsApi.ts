@@ -168,9 +168,19 @@ export function useCreatePersonMutation() {
                 gender: person.gender,
                 birthdate: person.birthdate?.trim().length > 0 ? person.birthdate : null,
             };
+            console.log(personDbData, person.personId);
+            if (!personDbData.id) {
+                delete personDbData.id;
+            }
             const result = person.personId
                 ? await personRef.upsert(personDbData).select()
-                : await personRef.insert([personDbData]).select();
+                : await personRef
+                      .insert([
+                          {
+                              ...personDbData,
+                          },
+                      ])
+                      .select();
 
             if (result.error) throw new Error(result.error.message);
             const personId = result.data[0].id;

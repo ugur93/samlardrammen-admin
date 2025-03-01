@@ -37,27 +37,21 @@ import {
 } from '@mui/material';
 import TablePaginationActions from '@mui/material/TablePagination/TablePaginationActions';
 import TableSortLabel from '@mui/material/TableSortLabel';
+import { format } from 'date-fns';
 import React, { Fragment, useMemo, useState } from 'react';
 import { Controller, FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useCreatePersonMutation, useGetPersons } from '../api/usePersonsApi';
 import CustomListItemText from '../components/CustomListItemText';
 import { FormDatePicker } from '../components/FormDatePicker';
+import Searchfield from '../components/Searchfield';
 import { base } from '../context/AppContext';
+import MembersTableProvider, { FilterOption, MembersTableData, useMembersTable } from '../context/MembersTableContext';
 import { mapToFormValues, UserFormFields } from '../types/formTypes';
-import { genderVisningsnavn, MembershipDetails, PersonDetails } from '../types/personTypes';
-import { getComparator, Order } from '../types/table.types';
+import { genderVisningsnavn, PersonDetails } from '../types/personTypes';
+import { getComparator } from '../types/table.types';
 import PageTemplate from './PageTemplate';
-interface MembersTableData {
-    id: number;
-    name: string;
-    birthdate: string;
-    age: number | string;
-    email: string | null;
-    gender: string;
-    membership: MembershipDetails[] | undefined;
-    paid: MembershipDetails[] | undefined;
-}
+
 interface HeadCell {
     disablePadding: boolean;
     id: keyof MembersTableData;
@@ -65,10 +59,7 @@ interface HeadCell {
     className?: string;
     numeric: boolean;
 }
-interface FilterOption {
-    label: string;
-    value: string | FilterOption;
-}
+
 const headCells: readonly HeadCell[] = [
     {
         id: 'name',
@@ -163,7 +154,9 @@ export const UserAdminPage: React.FC = () => {
     return (
         <PageTemplate>
             <Box sx={{ width: '100%', bgcolor: 'background.paper' }}>
-                <MembersTable />
+                <MembersTableProvider>
+                    <MembersTable />
+                </MembersTableProvider>
             </Box>
         </PageTemplate>
     );
@@ -173,21 +166,27 @@ const MembersTable: React.FC = () => {
     // React Query to fetch data
     const data = useGetPersons();
     useGetOrganizations();
-    const [order, setOrder] = React.useState<Order>('asc');
-    const [selectedOptions, setSelectedOptions] = React.useState<FilterOption[]>([{ label: 'Alle', value: 'all' }]);
-    const [orderBy, setOrderBy] = React.useState<keyof MembersTableData>('name');
+    const {
+        page,
+        selectedOptions,
+        order,
+        orderBy,
+        rowsPerPage,
+        setSelectedOptions,
+        handleChangeRowsPerPage,
+        setPage,
+        setSearchTerm,
+    } = useMembersTable();
     const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean | undefined>(false);
-    const [page, setPage] = useState<number>(0);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const [rowsPerPage, setRowsPerPage] = useState<number>(30);
 
     function mapPersondetailsToTableData(personDetails: PersonDetails): MembersTableData {
         return {
             id: personDetails.person.id,
             name: `${personDetails.person.firstname} ${personDetails.person.lastname}`,
             birthdate: personDetails.person.birthdate
-                ? new Date(personDetails.person.birthdate).toLocaleDateString()
+                ? format(new Date(personDetails.person.birthdate), 'dd/MM/yyyy')
                 : '-',
             age: personDetails.person.birthdate
                 ? new Date().getFullYear() - new Date(personDetails.person.birthdate).getFullYear()
@@ -199,27 +198,7 @@ const MembersTable: React.FC = () => {
                 personDetails.membership?.filter((m) => m.paymentDetails.some((d) => d.payment_state == 'paid')) || [],
         };
     }
-    const visibleRows = React.useMemo(
-        () =>
-            [...data.map(mapPersondetailsToTableData)]
-                .sort(getComparator(order, orderBy))
-                .filter((d) => filterOption(d, selectedOptions))
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-        [order, orderBy, selectedOptions, data, rowsPerPage, page]
-    );
-    const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof MembersTableData) => {
-        const isAsc = orderBy === property && order === 'asc';
-        setOrder(isAsc ? 'desc' : 'asc');
-        setOrderBy(property);
-    };
-    const createSortHandler = (property: keyof MembersTableData) => (event: React.MouseEvent<unknown>) => {
-        handleRequestSort(event, property);
-    };
 
-    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
     function copyMailListToClipboard() {
         const mailList = [...data.map(mapPersondetailsToTableData)]
             .sort(getComparator(order, orderBy))
@@ -251,41 +230,32 @@ const MembersTable: React.FC = () => {
                     </Typography>
                 </Box>
             </Box>
-            <div className="flex justify-between">
-                <Button variant="contained" color="primary" onClick={() => setCreateOrEdit(true)} sx={{ mb: 2 }}>
-                    Legg til medlem
-                </Button>
-
-                <div className="flex flex-row items-center">
-                    <Button onClick={copyMailListToClipboard} variant="text">
-                        Kopier mailliste
+            <div>
+                <div className="flex justify-between">
+                    <Button variant="contained" color="primary" onClick={() => setCreateOrEdit(true)} sx={{ mb: 2 }}>
+                        Legg til medlem
                     </Button>
-                    <DenseMenu
-                        selectedOptions={selectedOptions}
-                        onChange={setSelectedOptions}
-                        options={filterOptions}
-                    />
+
+                    <div className="flex flex-row items-center">
+                        <Button onClick={copyMailListToClipboard} variant="text">
+                            Kopier mailliste
+                        </Button>
+                        <DenseMenu
+                            selectedOptions={selectedOptions}
+                            onChange={setSelectedOptions}
+                            options={filterOptions}
+                        />
+                    </div>
                 </div>
             </div>
-
             <Paper>
+                <Searchfield onChange={setSearchTerm} size="small" />
+
                 <TableContainer component={Paper} sx={{ maxHeight: isMobile ? 500 : 840 }}>
                     {isMobile ? (
-                        <TableMobile
-                            rows={visibleRows}
-                            order={order}
-                            orderBy={orderBy}
-                            setCreateOrEdit={setCreateOrEdit}
-                            createSortHandler={createSortHandler}
-                        />
+                        <TableMobile setCreateOrEdit={setCreateOrEdit} />
                     ) : (
-                        <TableDesktop
-                            rows={visibleRows}
-                            order={order}
-                            orderBy={orderBy}
-                            setCreateOrEdit={setCreateOrEdit}
-                            createSortHandler={createSortHandler}
-                        />
+                        <TableDesktop setCreateOrEdit={setCreateOrEdit} />
                     )}
                 </TableContainer>
                 <TablePagination
@@ -326,15 +296,11 @@ const MembersTable: React.FC = () => {
 };
 
 interface TableProps {
-    rows: MembersTableData[];
-    orderBy: keyof MembersTableData;
-    order: Order;
-    createSortHandler: (property: keyof MembersTableData) => (event: React.MouseEvent<unknown>) => void;
     setCreateOrEdit: (PersonDetails: PersonDetails | boolean | undefined) => void;
 }
-function TableMobile({ rows, orderBy, order, createSortHandler, setCreateOrEdit }: TableProps) {
+function TableMobile({ setCreateOrEdit }: TableProps) {
     const data = useGetPersons();
-
+    const { visibleRows: rows, order, orderBy, createSortHandler } = useMembersTable();
     return (
         <Table stickyHeader size="small" padding="normal" className="!w-[300px]">
             <TableHead>
@@ -356,17 +322,18 @@ function TableMobile({ rows, orderBy, order, createSortHandler, setCreateOrEdit 
             <TableBody>
                 {rows?.map((personDetails) => (
                     <Fragment key={personDetails.id}>
-                        <TableRow key={personDetails.id}>
+                        <TableRow>
                             <TableCell>
                                 <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
                             </TableCell>
                             <TableCell>{personDetails.age}</TableCell>
                             <TableCell>{personDetails.email}</TableCell>
                         </TableRow>
-                        <TableRow key={personDetails.id}>
+                        <TableRow>
                             <TableCell colSpan={3}>
                                 <Box sx={{ margin: 1 }}>
                                     <List dense disablePadding>
+                                        <CustomListItemText primary={'Fødselsdato'} secondary={personDetails.gender} />
                                         <CustomListItemText primary={'Kjønn'} secondary={personDetails.gender} />
                                         <CustomListItemText
                                             primary={'Medlemskap/Betaling'}
@@ -415,8 +382,9 @@ function TableMobile({ rows, orderBy, order, createSortHandler, setCreateOrEdit 
         </Table>
     );
 }
-function TableDesktop({ rows, orderBy, order, createSortHandler, setCreateOrEdit }: TableProps) {
+function TableDesktop({ setCreateOrEdit }: TableProps) {
     const data = useGetPersons();
+    const { visibleRows: rows, order, orderBy, createSortHandler } = useMembersTable();
 
     return (
         <Table stickyHeader size="small">
@@ -440,7 +408,7 @@ function TableDesktop({ rows, orderBy, order, createSortHandler, setCreateOrEdit
             </TableHead>
             <TableBody>
                 {rows?.map((personDetails) => (
-                    <TableRow key={personDetails.id}>
+                    <TableRow key={'desktop' + '-' + personDetails.id}>
                         <TableCell className="w-[150px]">
                             <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
                         </TableCell>
@@ -554,10 +522,10 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
                             label="Email"
                             fullWidth
                             {...register('email', {
-                                pattern: {
-                                    value: /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/,
-                                    message: 'Invalid email address',
-                                },
+                                // pattern: {
+                                //     value: /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/,
+                                //     message: 'Invalid email address',
+                                // },
                             })}
                             error={Boolean(errors.email)}
                             helperText={errors.email?.message}

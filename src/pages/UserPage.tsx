@@ -210,7 +210,6 @@ export const UserDetails: React.FC = () => {
 
 function MembershipDetailsView({ person }: { person: PersonDetails }) {
     const membership = person?.membership;
-    const { user } = useAppContext();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     return (
