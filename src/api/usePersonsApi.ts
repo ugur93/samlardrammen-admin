@@ -56,7 +56,7 @@ const fetchPersonByEmail = async (email?: string): Promise<PersonDetails | null>
     const { data: person, error } = await supabase
         .from('person')
         .select('*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*)))')
-        .filter('email', 'eq', email)
+        .eq('email', email!)
         .single();
     if (error) {
         console.error(error);

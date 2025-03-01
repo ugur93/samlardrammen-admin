@@ -120,6 +120,7 @@ function ToolbarMenu() {
         setAnchorEl(null);
     };
 
+    if (pages.length === 0) return;
     if (!isMobile) {
         return (
             <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
@@ -179,7 +180,7 @@ function UserButton() {
         return (
             <div className="flex items-center space-x-4">
                 <Link className="!text-white pr-4" href="#/user">
-                    {user.details?.name}
+                    {user.details?.name ?? user.user?.email}
                 </Link>
                 <Button
                     onClick={() => logoutUser.mutate()}

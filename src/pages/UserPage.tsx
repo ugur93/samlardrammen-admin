@@ -10,6 +10,7 @@ import {
     InputLabel,
     List,
     MenuItem,
+    Paper,
     Select,
     Table,
     TableBody,
@@ -63,7 +64,6 @@ export const UserDetails: React.FC = () => {
     const { register, handleSubmit, reset } = methods;
 
     const onSubmit = (data: UserFormFields) => {
-        console.log(data);
         createPersonFn.mutate({ person: data, existingPerson: userDetails });
         reset(mapToFormValues(getUserDetails()));
         setIsEditing(false);
@@ -79,7 +79,18 @@ export const UserDetails: React.FC = () => {
         return `${toAdressLine(adresse?.addressLine1)}${toAdressLine(adresse?.addressLine2)}${toAdressLine(adresse?.city)}${toAdressLine(adresse?.postcode)}`;
     }
     const details = getUserDetails();
-    if (!details) return null;
+    if (!details) {
+        return (
+            <Paper className="pt-3 p-4">
+                <Typography variant="body1" className="text-black">
+                    Fant ingen bruker med epost <strong>{user?.user?.email}</strong>. Det skyldes at din epost ikke er
+                    registrert til en bruker i vårt system. Send mail til{' '}
+                    <a href="mailto:samlardrammen@gmail.com">samlardrammen@gmail.com</a> for å få registrert din e-post
+                    på riktig person. Legg til både navn og riktig epost i mailen.
+                </Typography>
+            </Paper>
+        );
+    }
     return (
         <div className="p-6 flex justify-center">
             <div className="w-full max-w-4xl">
