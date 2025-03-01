@@ -168,7 +168,6 @@ export function useCreatePersonMutation() {
                 gender: person.gender,
                 birthdate: person.birthdate?.trim().length > 0 ? person.birthdate : null,
             };
-            console.log(personDbData, person.personId);
             if (!personDbData.id) {
                 delete personDbData.id;
             }

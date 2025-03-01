@@ -69,7 +69,6 @@ export default function MembersTableProvider({ children }: PropsWithChildren<unk
                 .sort(getComparator(order, orderBy))
                 .filter((d) => filterOption(d, selectedOptions))
                 .filter((d) => {
-                    console.log(searchTerm, d);
                     return searchTerm && searchTerm.trim().length > 0
                         ? toSearchValue(d).includes(searchTerm.toLowerCase())
                         : true;
