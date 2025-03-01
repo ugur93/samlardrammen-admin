@@ -1,5 +1,5 @@
 import { User } from '@supabase/supabase-js';
-import { createContext, ReactNode, useContext } from 'react';
+import { createContext, PropsWithChildren, ReactNode, useContext } from 'react';
 import { useLoggedInUser } from '../api/usePersonsApi';
 import { PersonDetails } from '../types/personTypes';
 
@@ -7,6 +7,7 @@ export interface LoggedInUser {
     user: User;
     details: PersonDetails;
     roles: string[];
+    isAdmin: boolean;
 }
 interface AppContextProps {
     user: LoggedInUser | null;
@@ -58,15 +59,15 @@ export const pages: PageDetail[] = [
 function getPages(roles: string[]): PageDetail[] {
     return pages.filter((page) => page.roles.length == 0 || page.roles.some((role) => roles.includes(role)));
 }
-export const AppContextProvider: React.FC<AppContextProviderProps> = ({ children }) => {
+export const AppContextProvider: React.FC<AppContextProviderProps> = ({ children }: PropsWithChildren<unknown>) => {
     const loggedInUser = useLoggedInUser();
 
     return (
         <AppContext.Provider
             value={{
                 user: loggedInUser,
-                roles: loggedInUser?.roles ?? [],
                 isAdmin: loggedInUser?.roles.includes('admin') ?? false,
+                roles: loggedInUser?.roles ?? [],
                 pages: getPages(loggedInUser?.roles ?? []),
             }}
         >

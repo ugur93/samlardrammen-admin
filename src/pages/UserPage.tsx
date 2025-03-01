@@ -191,7 +191,7 @@ export const UserDetails: React.FC = () => {
                                     </List>
                                 </Grid>
                                 <Box className="flex flex-row gap-2 pt-3">
-                                    {!isEditing && (
+                                    {!isEditing && user?.isAdmin && (
                                         <Button variant="contained" onClick={handleEditClick}>
                                             Rediger
                                         </Button>
@@ -354,7 +354,7 @@ function TableDesktop({ membership, person }: TableProps) {
                     <TableCell>Frist</TableCell>
                     <TableCell>Forsinkelsesgebyr</TableCell>
                     <TableCell>Status</TableCell>
-                    <TableCell></TableCell>
+                    {user?.isAdmin && <TableCell></TableCell>}
                 </TableRow>
             </TableHead>
             <TableBody>
@@ -379,7 +379,7 @@ function TableDesktop({ membership, person }: TableProps) {
                                         : ''}
                                 </TableCell>
                                 <TableCell>NOK {payment.late_fee?.toFixed(2)}</TableCell>
-                                {user?.roles.includes('admin') ? (
+                                {user?.isAdmin ? (
                                     <ViewOrEditPaymentStatus
                                         paymentDetail={payment}
                                         membership={membership}

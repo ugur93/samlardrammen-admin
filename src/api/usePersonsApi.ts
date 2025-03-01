@@ -291,18 +291,18 @@ export const loginMutation = () => {
 };
 
 export const useLoggedInUser = () => {
-    return useSuspenseQuery<LoggedInUser | null, any>({
+    return useSuspenseQuery<LoggedInUser | null>({
         queryKey: QueryKeys.loggedInUser,
         queryFn: async () => {
             console.log('Fetching logged in user');
             const user = await supabase.auth.getUser();
             if (user.error) return null;
-            console.log(user);
             const personDetails = (await fetchPersonByUserIdOrEmail(user.data.user.id, user.data.user.email))!;
 
             return {
                 user: user.data.user,
                 details: personDetails,
+                isAdmin: personDetails?.person?.roles?.includes('admin') ?? false,
                 roles: personDetails?.person?.roles ?? [],
             };
         },
