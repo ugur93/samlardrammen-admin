@@ -25,7 +25,7 @@ import {
 import Grid from '@mui/material/Grid2';
 
 import { format } from 'date-fns';
-import React, { Fragment, useEffect, useState } from 'react';
+import React, { Fragment, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useParams } from 'react-router';
 import { useAddOrUpdatePaymentStatus, useCreatePersonMutation, useGetPersonById } from '../api/usePersonsApi';
@@ -228,45 +228,41 @@ function MembershipDetailsView({ person }: { person: PersonDetails }) {
             <Typography variant="h4" className="!mb-4 text-black">
                 Medlemskap
             </Typography>
-            <Card className="mb-6">
-                <CardContent>
-                    {membership && membership?.length > 0 ? (
-                        membership
-                            .sort((b) => (b.membership.is_member ? -1 : 1))
-                            .map((membership) => (
-                                <div
-                                    key={membership.membership.id}
-                                    className={`mb-4 ${!membership.membership.is_member ? 'bg-red-100' : ''}`}
-                                >
-                                    <div className="flex flex-row gap-2 align-middle self-center p-2">
-                                        <Typography variant="h6">
-                                            {membership.organization.organization.name}
-                                        </Typography>
-                                        {!membership.membership.is_member && (
-                                            <div className="self-center">(Medlemskapet er avsluttet)</div>
-                                        )}
-                                    </div>
-                                    <Card className="p-4">
-                                        <Typography variant="h6">Betalinger</Typography>
-                                        <div className="bg-gray-50 p-2 mb-2">
-                                            <p>
-                                                <strong>Kontonummer:</strong>{' '}
-                                                {membership.organization.organization.bank_account_number}
-                                            </p>
-                                        </div>
-                                        {isMobile ? (
-                                            <TableMobile membership={membership} person={person} />
-                                        ) : (
-                                            <TableDesktop membership={membership} person={person} />
-                                        )}
-                                    </Card>
+            <div>
+                {membership && membership?.length > 0 ? (
+                    membership
+                        .sort((b) => (b.membership.is_member ? -1 : 1))
+                        .map((membership) => (
+                            <div
+                                key={membership.membership.id}
+                                className={`mb-1 ${!membership.membership.is_member ? 'bg-red-100' : ''}`}
+                            >
+                                <div className="flex flex-row gap-2 align-middle self-center p-2">
+                                    <Typography variant="h6">{membership.organization.organization.name}</Typography>
+                                    {!membership.membership.is_member && (
+                                        <div className="self-center">(Medlemskapet er avsluttet)</div>
+                                    )}
                                 </div>
-                            ))
-                    ) : (
-                        <p>Uyelik yok</p>
-                    )}
-                </CardContent>
-            </Card>
+                                <Card className="p-2">
+                                    <Typography variant="h6">Betalinger</Typography>
+                                    <div className="bg-gray-50 p-2 mb-2">
+                                        <p>
+                                            <strong>Kontonummer:</strong>{' '}
+                                            {membership.organization.organization.bank_account_number}
+                                        </p>
+                                    </div>
+                                    {isMobile ? (
+                                        <TableMobile membership={membership} person={person} />
+                                    ) : (
+                                        <TableDesktop membership={membership} person={person} />
+                                    )}
+                                </Card>
+                            </div>
+                        ))
+                ) : (
+                    <p>Ingen medlemskap</p>
+                )}
+            </div>
         </>
     );
 }
@@ -277,6 +273,22 @@ interface TableProps {
 }
 function TableMobile({ membership, person }: TableProps) {
     const { user } = useAppContext();
+    const [editingPaymentId, setEditingPaymentId] = useState<number>();
+    const userPaymentInfoFn = useAddOrUpdatePaymentStatus(person.person.id);
+
+    const handleEditClick = (paymentDetailId: number) => {
+        setEditingPaymentId(paymentDetailId);
+    };
+
+    const handleSaveClick = (data: CreateOrUpdateUserPaymentDetailsFormFields) => {
+        userPaymentInfoFn.mutateAsync(data).then(() => {
+            setEditingPaymentId(undefined);
+        });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingPaymentId(undefined);
+    };
 
     return (
         <Table className="w-full">
@@ -285,6 +297,7 @@ function TableMobile({ membership, person }: TableProps) {
                     <TableCell>År</TableCell>
                     <TableCell>Beløp</TableCell>
                     <TableCell>Status</TableCell>
+                    {user?.isAdmin && <TableCell></TableCell>}
                 </TableRow>
             </TableHead>
             <TableBody>
@@ -297,55 +310,83 @@ function TableMobile({ membership, person }: TableProps) {
                         const userPaymentInfo = membership.paymentDetails.find(
                             (pd) => pd.payment_detail_id === payment.id
                         );
+                        const isEditing = editingPaymentId === payment.id;
+
                         return (
                             <Fragment key={index}>
-                                <TableRow
-                                    key={index}
-                                    className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
-                                >
+                                <TableRow className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}>
                                     <TableCell>{payment.year}</TableCell>
-                                    <TableCell>NOK {(userPaymentInfo?.amount ?? payment.amount!).toFixed(2)}</TableCell>
-                                    {user?.roles.includes('admin') ? (
-                                        <ViewOrEditPaymentStatus
-                                            paymentDetail={payment}
+
+                                    {isEditing && user?.isAdmin ? (
+                                        <EditablePaymentRow
+                                            payment={payment}
                                             membership={membership}
-                                            user={person}
+                                            userPaymentInfo={userPaymentInfo}
+                                            onSave={handleSaveClick}
+                                            onCancel={handleCancelEdit}
+                                            isMobile={true}
                                         />
                                     ) : (
-                                        <TableCell>
-                                            {userPaymentInfo?.payment_state == 'paid' ? 'Betalt' : 'Ikke betalt'}
-                                        </TableCell>
+                                        <>
+                                            <TableCell>
+                                                {userPaymentInfo?.amount
+                                                    ? `NOK ${userPaymentInfo.amount.toFixed(2)}`
+                                                    : '-'}
+                                            </TableCell>
+                                            <TableCell>
+                                                {userPaymentInfo?.payment_state === 'paid' ? 'Betalt' : 'Ikke betalt'}
+                                            </TableCell>
+                                            {user?.isAdmin && (
+                                                <TableCell>
+                                                    <IconButton onClick={() => handleEditClick(payment.id)}>
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                </TableCell>
+                                            )}
+                                        </>
                                     )}
                                 </TableRow>
-                                <TableRow>
-                                    <TableCell colSpan={3}>
-                                        <Box sx={{ margin: 1 }}>
-                                            <Grid container spacing={2}>
-                                                <List dense disablePadding>
-                                                    <CustomListItemText
-                                                        primary={'Frist'}
-                                                        secondary={
-                                                            payment.payment_deadline
-                                                                ? format(
-                                                                      new Date(payment.payment_deadline),
-                                                                      'dd/MM/yyyy'
-                                                                  )
-                                                                : ''
-                                                        }
-                                                    />
-                                                    <CustomListItemText
-                                                        primary={'Forsinkelsesgebyr'}
-                                                        secondary={
-                                                            <div className="w-max">
-                                                                NOK {payment.late_fee?.toFixed(2)}
-                                                            </div>
-                                                        }
-                                                    />
-                                                </List>
-                                            </Grid>
-                                        </Box>
-                                    </TableCell>
-                                </TableRow>
+                                {!isEditing && (
+                                    <TableRow>
+                                        <TableCell colSpan={user?.isAdmin ? 5 : 4}>
+                                            <Box sx={{ margin: 1 }}>
+                                                <Grid container spacing={2}>
+                                                    <List dense disablePadding>
+                                                        <CustomListItemText
+                                                            primary={'Frist'}
+                                                            secondary={
+                                                                payment.payment_deadline
+                                                                    ? format(
+                                                                          new Date(payment.payment_deadline),
+                                                                          'dd/MM/yyyy'
+                                                                      )
+                                                                    : ''
+                                                            }
+                                                        />
+                                                        <CustomListItemText
+                                                            primary={'Forsinkelsesgebyr'}
+                                                            secondary={
+                                                                <div className="w-max">
+                                                                    NOK {payment.late_fee?.toFixed(2)}
+                                                                </div>
+                                                            }
+                                                        />
+                                                        {userPaymentInfo?.payment_state == 'paid' && (
+                                                            <CustomListItemText
+                                                                primary={'Betalt'}
+                                                                secondary={
+                                                                    <div className="w-max">
+                                                                        NOK {userPaymentInfo?.amount?.toFixed(2)}
+                                                                    </div>
+                                                                }
+                                                            />
+                                                        )}
+                                                    </List>
+                                                </Grid>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </Fragment>
                         );
                     })}
@@ -353,8 +394,25 @@ function TableMobile({ membership, person }: TableProps) {
         </Table>
     );
 }
+
 function TableDesktop({ membership, person }: TableProps) {
     const { user } = useAppContext();
+    const [editingPaymentId, setEditingPaymentId] = useState<number>();
+    const userPaymentInfoFn = useAddOrUpdatePaymentStatus(person.person.id);
+
+    const handleEditClick = (paymentDetailId: number) => {
+        setEditingPaymentId(paymentDetailId);
+    };
+
+    const handleSaveClick = (data: CreateOrUpdateUserPaymentDetailsFormFields) => {
+        userPaymentInfoFn.mutateAsync(data).then(() => {
+            setEditingPaymentId(undefined);
+        });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingPaymentId(undefined);
+    };
 
     return (
         <Table className="w-full">
@@ -362,6 +420,7 @@ function TableDesktop({ membership, person }: TableProps) {
                 <TableRow>
                     <TableCell>År</TableCell>
                     <TableCell>Beløp</TableCell>
+                    <TableCell>Betalt</TableCell>
                     <TableCell>Frist</TableCell>
                     <TableCell>Forsinkelsesgebyr</TableCell>
                     <TableCell>Status</TableCell>
@@ -376,30 +435,48 @@ function TableDesktop({ membership, person }: TableProps) {
                     })
                     .map((payment, index) => {
                         const userPaymentInfo = getPaymentDetail(payment, membership);
+                        const isEditing = editingPaymentId === payment.id;
+
                         return (
                             <TableRow
                                 key={index}
                                 className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
                             >
                                 <TableCell>{payment.year}</TableCell>
-                                <TableCell>NOK {(userPaymentInfo?.amount ?? payment.amount!).toFixed(2)}</TableCell>
-                                <TableCell>
-                                    {' '}
-                                    {payment.payment_deadline
-                                        ? format(new Date(payment.payment_deadline), 'dd/MM/yyyy')
-                                        : ''}
-                                </TableCell>
-                                <TableCell>NOK {payment.late_fee?.toFixed(2)}</TableCell>
-                                {user?.isAdmin ? (
-                                    <ViewOrEditPaymentStatus
-                                        paymentDetail={payment}
+                                <TableCell>NOK {payment.amount!.toFixed(2)}</TableCell>
+
+                                {isEditing && user?.isAdmin ? (
+                                    <EditablePaymentRow
+                                        payment={payment}
                                         membership={membership}
-                                        user={person}
+                                        userPaymentInfo={userPaymentInfo}
+                                        onSave={handleSaveClick}
+                                        onCancel={handleCancelEdit}
                                     />
                                 ) : (
-                                    <TableCell>
-                                        {userPaymentInfo?.payment_state == 'paid' ? 'Betalt' : 'Ikke betalt'}
-                                    </TableCell>
+                                    <>
+                                        <TableCell>
+                                            {userPaymentInfo?.payment_state == 'paid' && userPaymentInfo?.amount
+                                                ? `NOK ${userPaymentInfo.amount.toFixed(2)}`
+                                                : '-'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {payment.payment_deadline
+                                                ? format(new Date(payment.payment_deadline), 'dd/MM/yyyy')
+                                                : ''}
+                                        </TableCell>
+                                        <TableCell>NOK {payment.late_fee?.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            {userPaymentInfo?.payment_state === 'paid' ? 'Betalt' : 'Ikke betalt'}
+                                        </TableCell>
+                                        {user?.isAdmin && (
+                                            <TableCell>
+                                                <IconButton onClick={() => handleEditClick(payment.id)}>
+                                                    <EditIcon />
+                                                </IconButton>
+                                            </TableCell>
+                                        )}
+                                    </>
                                 )}
                             </TableRow>
                         );
@@ -409,92 +486,88 @@ function TableDesktop({ membership, person }: TableProps) {
     );
 }
 
-function ViewOrEditPaymentStatus({
-    paymentDetail,
+// Extract EditablePaymentRow component
+function EditablePaymentRow({
+    payment,
     membership,
-    user,
+    userPaymentInfo,
+    onSave,
+    onCancel,
+    isMobile = false,
 }: {
-    paymentDetail: PaymentDetailDatabase;
+    payment: PaymentDetailDatabase;
     membership: MembershipDetails;
-    user: PersonDetails;
+    userPaymentInfo: any;
+    onSave: (data: CreateOrUpdateUserPaymentDetailsFormFields) => void;
+    onCancel: () => void;
+    isMobile?: boolean;
 }) {
-    const [editPayment, setEditPayment] = useState<number>();
-    const userPaymentInfoFn = useAddOrUpdatePaymentStatus(user.person.id);
-    const userPaymentInfo = getPaymentDetail(paymentDetail, membership);
-    const paid = userPaymentInfo?.payment_state == 'paid';
-    const {
-        setError,
-        handleSubmit,
-        reset,
-        control,
-        formState: { errors },
-    } = useForm<CreateOrUpdateUserPaymentDetailsFormFields>({
+    const { control, handleSubmit } = useForm<CreateOrUpdateUserPaymentDetailsFormFields>({
         defaultValues: {
             id: userPaymentInfo?.id,
             membership_id: membership.membership.id,
-            payment_detail_id: paymentDetail.id,
-            amount: userPaymentInfo?.amount ?? 0,
+            payment_detail_id: payment.id,
+            amount:
+                userPaymentInfo?.payment_state == 'unpaid'
+                    ? payment.amount
+                    : (userPaymentInfo?.amount ?? payment.amount ?? 0),
             paymentState: userPaymentInfo?.payment_state ?? 'unpaid',
             payment_date: userPaymentInfo?.payment_date ?? null,
         },
     });
 
-    useEffect(() => {
-        reset({
-            id: userPaymentInfo?.id,
-            membership_id: membership.membership.id,
-            payment_detail_id: paymentDetail.id,
-            amount: userPaymentInfo?.amount ?? 0,
-            paymentState: userPaymentInfo?.payment_state ?? 'unpaid',
-            payment_date: userPaymentInfo?.payment_date,
-        } as CreateOrUpdateUserPaymentDetailsFormFields);
-    }, [userPaymentInfo]);
-
-    function onSave(data: CreateOrUpdateUserPaymentDetailsFormFields) {
-        setEditPayment(undefined);
-        userPaymentInfoFn.mutateAsync(data).then(() => {
-            reset();
-        });
-    }
+    const saveForm = handleSubmit((data) => {
+        onSave(data);
+    });
 
     return (
         <>
-            {editPayment != paymentDetail.id ? (
-                <TableCell>{paid ? 'Betalt' : 'Ikke betalt'}</TableCell>
-            ) : (
+            {!isMobile && (
                 <TableCell>
-                    <FormControl fullWidth>
-                        <Controller
-                            control={control}
-                            name="paymentState"
-                            render={({ field }) => (
-                                <Select
-                                    {...field}
-                                    size="small"
-                                    displayEmpty
-                                    inputProps={{ 'aria-label': 'Without label' }}
-                                >
-                                    <MenuItem value={'unpaid'}>Ikke betalt</MenuItem>
-                                    <MenuItem value={'paid'}>Betalt</MenuItem>
-                                </Select>
-                            )}
-                        />
-                    </FormControl>
+                    <Controller
+                        control={control}
+                        name="amount"
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                size="small"
+                                type="number"
+                                fullWidth={isMobile}
+                                value={field.value}
+                                onChange={(e) => {
+                                    const value = parseFloat(e.target.value);
+                                    field.onChange(isNaN(value) ? 0 : value);
+                                }}
+                            />
+                        )}
+                    />
                 </TableCell>
             )}
-            {editPayment != paymentDetail.id ? (
+            {!isMobile && (
                 <TableCell>
-                    <IconButton onClick={() => setEditPayment(paymentDetail.id)}>
-                        <EditIcon />
-                    </IconButton>
-                </TableCell>
-            ) : (
-                <TableCell>
-                    <IconButton onClick={handleSubmit(onSave)}>
-                        <SaveAltIcon />
-                    </IconButton>
+                    {payment.payment_deadline ? format(new Date(payment.payment_deadline), 'dd/MM/yyyy') : ''}
                 </TableCell>
             )}
+            {!isMobile && <TableCell>NOK {payment.late_fee?.toFixed(2)}</TableCell>}
+            <TableCell>
+                <FormControl fullWidth>
+                    <Controller
+                        control={control}
+                        name="paymentState"
+                        render={({ field }) => (
+                            <Select {...field} size="small" displayEmpty value={field.value}>
+                                <MenuItem value={'unpaid'}>Ikke betalt</MenuItem>
+                                <MenuItem value={'paid'}>Betalt</MenuItem>
+                            </Select>
+                        )}
+                    />
+                </FormControl>
+            </TableCell>
+            <TableCell>
+                <IconButton onClick={saveForm}>
+                    <SaveAltIcon />
+                </IconButton>
+            </TableCell>
         </>
     );
 }

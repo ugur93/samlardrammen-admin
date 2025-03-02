@@ -1,11 +1,12 @@
-import React, { createContext, PropsWithChildren, useContext, useState } from 'react';
+import React, { createContext, PropsWithChildren, useContext, useMemo, useState } from 'react';
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useGetPersons } from '../api/usePersonsApi';
 import { genderVisningsnavn, MembershipDetails, PersonDetails } from '../types/personTypes';
 import { getComparator, Order } from '../types/table.types';
 export interface FilterOption {
     label: string;
-    value: string | FilterOption;
+    value: any;
+    filter?: (data: MembersTableData) => boolean;
 }
 export interface MembersTableData {
     id: number;
@@ -22,6 +23,7 @@ type MembersTableProps = {
     orderBy: keyof MembersTableData;
     selectedOptions: FilterOption[];
     order: Order;
+    filteredRows: MembersTableData[];
     visibleRows: MembersTableData[];
     createSortHandler: (property: keyof MembersTableData) => (event: React.MouseEvent<unknown>) => void;
     handleChangeRowsPerPage: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
@@ -37,7 +39,7 @@ export default function MembersTableProvider({ children }: PropsWithChildren<unk
     const data = useGetPersons();
     useGetOrganizations();
     const [order, setOrder] = React.useState<Order>('asc');
-    const [selectedOptions, setSelectedOptions] = React.useState<FilterOption[]>([{ label: 'Alle', value: 'all' }]);
+    const [selectedOptions, setSelectedOptions] = React.useState<FilterOption[]>([]);
     const [orderBy, setOrderBy] = React.useState<keyof MembersTableData>('name');
     const [rowsPerPage, setRowsPerPage] = useState<number>(30);
     const [page, setPage] = useState<number>(0);
@@ -63,11 +65,13 @@ export default function MembersTableProvider({ children }: PropsWithChildren<unk
     function toSearchValue(data: MembersTableData) {
         return data.email?.toLocaleLowerCase() + data.name?.toLocaleLowerCase();
     }
-    const visibleRows = React.useMemo(
+    const filteredRows = useMemo(() => {
+        return data.map(mapPersondetailsToTableData).filter((d) => filterOption(d, selectedOptions));
+    }, [selectedOptions, data]);
+    const visibleRows = useMemo(
         () =>
-            [...data.map(mapPersondetailsToTableData)]
+            filteredRows
                 .sort(getComparator(order, orderBy))
-                .filter((d) => filterOption(d, selectedOptions))
                 .filter((d) => {
                     return searchTerm && searchTerm.trim().length > 0
                         ? toSearchValue(d).includes(searchTerm.toLowerCase())
@@ -91,27 +95,21 @@ export default function MembersTableProvider({ children }: PropsWithChildren<unk
     };
     function filterOption(data: MembersTableData, selectedOptions: FilterOption[]) {
         let result = true;
-        if (selectedOptions.some((o) => o.value === 'all')) {
+        if (selectedOptions.length == 0) {
             return true;
         }
-        if (selectedOptions.some((o) => o.value == 'women')) {
-            result = result && data.gender == 'Kvinne';
-        }
-        if (selectedOptions.some((o) => o.value == 'man')) {
-            result = result && data.gender == 'Mann';
-        }
-        if (selectedOptions.some((o) => o.value == 'children')) {
-            result = result && Number(data.age) < 16;
-        }
-        if (selectedOptions.some((o) => o.value == 'paid')) {
-            result = result && data.paid?.length !== 0;
-        }
+        selectedOptions.forEach((option) => {
+            if (option.filter) {
+                result = result && option.filter(data);
+            }
+        });
         return result;
     }
 
     return (
         <MembersTableContext.Provider
             value={{
+                filteredRows,
                 order,
                 orderBy,
                 selectedOptions,

@@ -1,7 +1,5 @@
-import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import MoneyOffIcon from '@mui/icons-material/MoneyOff';
 import {
     Box,
     Button,
@@ -35,6 +33,7 @@ import {
     useMediaQuery,
     useTheme,
 } from '@mui/material';
+
 import TablePaginationActions from '@mui/material/TablePagination/TablePaginationActions';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import { format } from 'date-fns';
@@ -44,12 +43,13 @@ import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useCreatePersonMutation, useGetPersons } from '../api/usePersonsApi';
 import CustomListItemText from '../components/CustomListItemText';
 import { FormDatePicker } from '../components/FormDatePicker';
+import MembershipPaymentRow from '../components/MembershipPaymentRow';
 import Searchfield from '../components/Searchfield';
+import TableFilterHeader from '../components/TableFilterHeader';
 import { base } from '../context/AppContext';
 import MembersTableProvider, { FilterOption, MembersTableData, useMembersTable } from '../context/MembersTableContext';
 import { mapToFormValues, UserFormFields } from '../types/formTypes';
 import { genderVisningsnavn, PersonDetails } from '../types/personTypes';
-import { getComparator } from '../types/table.types';
 import PageTemplate from './PageTemplate';
 
 interface HeadCell {
@@ -119,28 +119,6 @@ const headCellsMobile: readonly HeadCell[] = [
         label: 'Email',
     },
 ];
-const filterOptions: FilterOption[] = [
-    {
-        label: 'Alle',
-        value: 'all',
-    },
-    {
-        label: 'Kvinner',
-        value: 'women',
-    },
-    {
-        label: 'Menn',
-        value: 'man',
-    },
-    {
-        label: 'Barn under 16',
-        value: 'children',
-    },
-    {
-        label: 'Betalt',
-        value: 'paid',
-    },
-];
 
 export default function AdminPage() {
     return (
@@ -166,17 +144,7 @@ const MembersTable: React.FC = () => {
     // React Query to fetch data
     const data = useGetPersons();
     useGetOrganizations();
-    const {
-        page,
-        selectedOptions,
-        order,
-        orderBy,
-        rowsPerPage,
-        setSelectedOptions,
-        handleChangeRowsPerPage,
-        setPage,
-        setSearchTerm,
-    } = useMembersTable();
+    const { page, rowsPerPage, filteredRows, handleChangeRowsPerPage, setPage, setSearchTerm } = useMembersTable();
     const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean | undefined>(false);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -200,11 +168,7 @@ const MembersTable: React.FC = () => {
     }
 
     function copyMailListToClipboard() {
-        const mailList = [...data.map(mapPersondetailsToTableData)]
-            .sort(getComparator(order, orderBy))
-            .filter((d) => filterOption(d, selectedOptions))
-            .map((d) => d.email)
-            .join(';');
+        const mailList = filteredRows.map((d) => d.email).join(';');
         navigator.clipboard.writeText(mailList);
     }
     return (
@@ -240,18 +204,14 @@ const MembersTable: React.FC = () => {
                         <Button onClick={copyMailListToClipboard} variant="text">
                             Kopier mailliste
                         </Button>
-                        <DenseMenu
-                            selectedOptions={selectedOptions}
-                            onChange={setSelectedOptions}
-                            options={filterOptions}
-                        />
                     </div>
                 </div>
             </div>
             <Paper>
                 <Searchfield onChange={setSearchTerm} size="small" />
 
-                <TableContainer component={Paper} sx={{ maxHeight: isMobile ? 500 : 840 }}>
+                <TableContainer component={Paper} sx={{ maxHeight: isMobile ? '65vh' : 840 }}>
+                    <TableFilterMenu />
                     {isMobile ? (
                         <TableMobile setCreateOrEdit={setCreateOrEdit} />
                     ) : (
@@ -260,7 +220,7 @@ const MembersTable: React.FC = () => {
                 </TableContainer>
                 <TablePagination
                     rowsPerPageOptions={isMobile ? [] : [10, 20, 50, { label: 'Alle', value: -1 }]}
-                    count={data.length}
+                    count={filteredRows.length}
                     component="div"
                     rowsPerPage={rowsPerPage}
                     labelRowsPerPage="Rader per side"
@@ -321,57 +281,44 @@ function TableMobile({ setCreateOrEdit }: TableProps) {
             </TableHead>
             <TableBody>
                 {rows?.map((personDetails) => (
-                    <Fragment key={personDetails.id}>
+                    <Fragment key={personDetails.id + '-' + personDetails.name}>
                         <TableRow>
                             <TableCell>
                                 <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
                             </TableCell>
                             <TableCell>{personDetails.age}</TableCell>
-                            <TableCell>{personDetails.email}</TableCell>
+                            <TableCell className="w-[100px]">{personDetails.email}</TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell colSpan={3}>
                                 <Box sx={{ margin: 1 }}>
                                     <List dense disablePadding>
-                                        <CustomListItemText primary={'Fødselsdato'} secondary={personDetails.gender} />
+                                        <CustomListItemText
+                                            primary={'Fødselsdato'}
+                                            secondary={personDetails.birthdate}
+                                        />
                                         <CustomListItemText primary={'Kjønn'} secondary={personDetails.gender} />
-                                        <CustomListItemText
-                                            primary={'Medlemskap/Betaling'}
-                                            secondaryBelow
-                                            secondary={
-                                                <table>
-                                                    <tbody>
-                                                        {personDetails.membership?.map((m) => (
-                                                            <tr key={m.organization.organization.id}>
-                                                                <td>{m.organization.organization.name}</td>
-                                                                <td className="w-[10px]">
-                                                                    {m.paymentDetails.some(
-                                                                        (d) => d.payment_state == 'paid'
-                                                                    ) ? (
-                                                                        <CheckIcon color="primary" />
-                                                                    ) : (
-                                                                        <MoneyOffIcon color="error" />
-                                                                    )}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
+
+                                        <div className="flex flex-col gap-2 w-fit">
+                                            <Typography variant="subtitle1">Medlemskap/betaling</Typography>
+                                            {personDetails.membership?.map((m) => (
+                                                <MembershipPaymentRow
+                                                    key={m.organization.organization.id}
+                                                    membership={m}
+                                                    personId={personDetails.id}
+                                                />
+                                            ))}
+                                        </div>
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            startIcon={<EditIcon />}
+                                            onClick={() =>
+                                                setCreateOrEdit(data.find((p) => p.person.id == personDetails.id))
                                             }
-                                        />
-                                        <CustomListItemText
-                                            secondary={
-                                                <IconButton
-                                                    onClick={() =>
-                                                        setCreateOrEdit(
-                                                            data.find((p) => p.person.id == personDetails.id)
-                                                        )
-                                                    }
-                                                >
-                                                    <EditIcon />
-                                                </IconButton>
-                                            }
-                                        />
+                                        >
+                                            Rediger
+                                        </Button>
                                     </List>
                                 </Box>
                             </TableCell>
@@ -417,29 +364,25 @@ function TableDesktop({ setCreateOrEdit }: TableProps) {
                         <TableCell>{personDetails.email}</TableCell>
                         <TableCell>{personDetails.gender}</TableCell>
                         <TableCell>
-                            <table>
-                                <tbody>
-                                    {personDetails.membership?.map((m) => (
-                                        <tr key={m.organization.organization.id}>
-                                            <td>{m.organization.organization.name}</td>
-                                            <td className="w-[10px]">
-                                                {m.paymentDetails.some((d) => d.payment_state == 'paid') ? (
-                                                    <CheckIcon color="primary" />
-                                                ) : (
-                                                    <MoneyOffIcon color="error" />
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <div className="flex flex-col gap-2">
+                                {personDetails.membership?.map((m) => (
+                                    <MembershipPaymentRow
+                                        key={m.organization.organization.id}
+                                        membership={m}
+                                        personId={personDetails.id}
+                                    />
+                                ))}
+                            </div>
                         </TableCell>
                         <TableCell>
-                            <IconButton
+                            <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<EditIcon />}
                                 onClick={() => setCreateOrEdit(data.find((p) => p.person.id == personDetails.id))}
                             >
-                                <EditIcon />
-                            </IconButton>
+                                Rediger
+                            </Button>
                         </TableCell>
                     </TableRow>
                 ))}
@@ -612,17 +555,9 @@ const CreateOrEditUserDialog: React.FC<CreateUserDialogProps> = ({ open, onClose
     );
 };
 
-function DenseMenu({
-    options,
-    selectedOptions,
-    onChange,
-}: {
-    options: FilterOption[];
-    selectedOptions: FilterOption[];
-    onChange: (options: FilterOption[]) => void;
-}) {
+function DenseMenu({ options }: { options: FilterOption[] }) {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-
+    const { selectedOptions, setSelectedOptions } = useMembersTable();
     const open = Boolean(anchorEl);
     const handleClickListItem = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -634,7 +569,7 @@ function DenseMenu({
             ? selectedOptions.filter((o) => o.label !== option.label)
             : [...selectedOptions, option].filter((o) => o.value !== 'all');
 
-        onChange(updatedOptions.length === 0 ? [{ label: 'Alle', value: 'all' }] : updatedOptions);
+        setSelectedOptions(updatedOptions.length === 0 ? [{ label: 'Alle', value: 'all' }] : updatedOptions);
     };
 
     const handleClose = () => {
@@ -659,7 +594,7 @@ function DenseMenu({
                     <MenuItem
                         key={'all'}
                         className="flex items-center"
-                        onClick={() => onChange([{ label: 'Alle', value: 'all' }])}
+                        onClick={() => setSelectedOptions([{ label: 'Alle', value: 'all' }])}
                     >
                         Reset
                     </MenuItem>
@@ -682,22 +617,6 @@ function DenseMenu({
     );
 }
 
-function filterOption(data: MembersTableData, selectedOptions: FilterOption[]) {
-    let result = true;
-    if (selectedOptions.some((o) => o.value === 'all')) {
-        return true;
-    }
-    if (selectedOptions.some((o) => o.value == 'women')) {
-        result = result && data.gender == 'Kvinne';
-    }
-    if (selectedOptions.some((o) => o.value == 'man')) {
-        result = result && data.gender == 'Mann';
-    }
-    if (selectedOptions.some((o) => o.value == 'children')) {
-        result = result && Number(data.age) < 16;
-    }
-    if (selectedOptions.some((o) => o.value == 'paid')) {
-        result = result && data.paid?.length !== 0;
-    }
-    return result;
+function TableFilterMenu() {
+    return <TableFilterHeader className="mb-3" />;
 }

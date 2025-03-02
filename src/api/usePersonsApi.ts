@@ -97,7 +97,7 @@ const fetchPersonByUserId = async (user_id?: string): Promise<PersonDetails | nu
 };
 export function useGetPersons() {
     const { data } = useSuspenseQuery<PersonDetails[], Error>({
-        queryKey: ['persons'], // Unique key for the query
+        queryKey: QueryKeys.fetchPersons, // Unique key for the query
         queryFn: fetchPersons, // Function to fetch data
     });
 
@@ -121,7 +121,6 @@ export function useGetPersonByEmail(email: string) {
     return data;
 }
 export function useAddOrUpdatePaymentStatus(userId: number) {
-    console.log(userId);
     const qc = useQueryClient();
 
     return useMutation({
@@ -136,6 +135,7 @@ export function useAddOrUpdatePaymentStatus(userId: number) {
                         ? null
                         : paymentInfo.payment_date,
                 payment_state: paymentInfo.paymentState,
+                amount: paymentInfo.amount,
             } as Database['public']['Tables']['payment_info']['Insert'];
             const result = paymentInfo.id
                 ? await paymentInfoRef.upsert(paymentInfoDbData).select()
@@ -144,9 +144,39 @@ export function useAddOrUpdatePaymentStatus(userId: number) {
             if (result.error) throw new Error(result.error.message);
 
             qc.refetchQueries({ queryKey: QueryKeys.fetchPersonById(userId.toString()) });
+            qc.setQueryData(QueryKeys.fetchPersons, (data: PersonDetails[]) => {
+                return (
+                    data?.map((p) => {
+                        if (p.person.id === userId) {
+                            return {
+                                ...p,
+                                membership: p.membership?.map((m) => {
+                                    if (m.membership.id === paymentInfo.membership_id) {
+                                        return {
+                                            ...m,
+                                            paymentDetails: m.paymentDetails.map((pd) => {
+                                                if (pd.payment_detail_id === result.data[0].payment_detail_id) {
+                                                    return {
+                                                        ...pd,
+                                                        payment_state: paymentInfo.paymentState,
+                                                    };
+                                                }
+                                                return pd;
+                                            }),
+                                        };
+                                    }
+                                    return m;
+                                }),
+                            };
+                        }
+                        return p;
+                    }) ?? []
+                );
+            });
         },
     });
 }
+
 export function useCreatePersonMutation() {
     const qc = useQueryClient();
 
