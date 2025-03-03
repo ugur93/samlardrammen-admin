@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import React from 'react';
+import { useAppContext } from '../context/AppContext';
 import { MembershipDetails, PaymentDetailDatabase, PaymentInfoDatabase } from '../types/personTypes';
 
 interface MembershipTableProps {
@@ -34,6 +35,7 @@ interface MembershipTableProps {
 
 const MembershipTable: React.FC<MembershipTableProps> = ({ memberships, onEditPayment }) => {
     const theme = useTheme();
+    const { isAdmin } = useAppContext();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isMediumScreen = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
@@ -134,8 +136,8 @@ const MembershipTable: React.FC<MembershipTableProps> = ({ memberships, onEditPa
                                 </Typography>
                                 <Stack direction="row" spacing={1} alignItems="center">
                                     <Chip
-                                        label={membershipDetails.membership.is_member ? 'Medlem' : 'Ikke medlem'}
-                                        color={membershipDetails.membership.is_member ? 'success' : 'default'}
+                                        label={membershipDetails.membership.is_member ? 'Medlem' : 'Medlem'}
+                                        color={membershipDetails.membership.is_member ? 'success' : 'success'}
                                         size="small"
                                         sx={{ mb: { xs: 1, md: 0 } }}
                                     />
@@ -227,7 +229,7 @@ const MembershipTable: React.FC<MembershipTableProps> = ({ memberships, onEditPa
                                                         <Typography variant="h6" component="div" fontWeight={500}>
                                                             {payment.year}
                                                         </Typography>
-                                                        {onEditPayment && (
+                                                        {onEditPayment && isAdmin && (
                                                             <Tooltip title="Rediger betaling">
                                                                 <IconButton
                                                                     size="small"

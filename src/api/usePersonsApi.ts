@@ -202,7 +202,7 @@ export function useCreatePersonMutation() {
                 delete personDbData.id;
             }
             const result = person.personId
-                ? await personRef.upsert(personDbData).select()
+                ? await personRef.update(personDbData).eq('id', person.personId).select()
                 : await personRef
                       .insert([
                           {

@@ -85,7 +85,7 @@ function CustomAppBar() {
                         component="a"
                         sx={{
                             mr: 2,
-                            display: { xs: 'none', md: 'flex' },
+                            display: { xs: 'flex', md: 'flex' },
                             fontFamily: 'sans-serif',
                             fontWeight: 700,
                             color: 'inherit',
