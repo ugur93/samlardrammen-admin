@@ -1,39 +1,35 @@
-import EditIcon from '@mui/icons-material/Edit';
-import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import {
     Box,
     Button,
     Card,
     CardContent,
-    FormControl,
-    IconButton,
     InputLabel,
     List,
-    MenuItem,
     Paper,
-    Select,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableRow,
     TextField,
     Typography,
-    useMediaQuery,
-    useTheme,
+    useTheme
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 
 import { format } from 'date-fns';
-import React, { Fragment, useState } from 'react';
-import { Controller, FormProvider, useForm } from 'react-hook-form';
+import React, { useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 import { useParams } from 'react-router';
 import { useAddOrUpdatePaymentStatus, useCreatePersonMutation, useGetPersonById } from '../api/usePersonsApi';
 import CustomListItemText from '../components/CustomListItemText';
 import { FormDatePicker } from '../components/FormDatePicker';
+import MembershipTable from '../components/MembershipTable';
+import PaymentEditModal from '../components/PaymentEditModal';
 import { useAppContext } from '../context/AppContext';
 import { CreateOrUpdateUserPaymentDetailsFormFields, mapToFormValues, UserFormFields } from '../types/formTypes';
-import { AdressDatabase, MembershipDetails, PaymentDetailDatabase, PersonDetails } from '../types/personTypes';
+import {
+    AdressDatabase,
+    MembershipDetails,
+    PaymentDetailDatabase,
+    PaymentInfoDatabase,
+    PersonDetails,
+} from '../types/personTypes';
 import PageTemplate from './PageTemplate';
 export default function UserDetailsPage() {
     return (
@@ -222,7 +218,40 @@ export const UserDetails: React.FC = () => {
 function MembershipDetailsView({ person }: { person: PersonDetails }) {
     const membership = person?.membership;
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [selectedPayment, setSelectedPayment] = useState<PaymentDetailDatabase | null>(null);
+    const [selectedMembership, setSelectedMembership] = useState<MembershipDetails | null>(null);
+    const [selectedPaymentInfo, setSelectedPaymentInfo] = useState<PaymentInfoDatabase | null>(null);
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const userPaymentInfoFn = useAddOrUpdatePaymentStatus(person.person.id);
+
+    const handleEditClick = (
+        membership: MembershipDetails,
+        payment: PaymentDetailDatabase,
+        userPayment: PaymentInfoDatabase
+    ) => {
+        setSelectedPayment(payment);
+        setSelectedMembership(membership);
+        setSelectedPaymentInfo(userPayment);
+        setIsModalOpen(true);
+    };
+
+    const handleSaveClick = (data: CreateOrUpdateUserPaymentDetailsFormFields) => {
+        userPaymentInfoFn.mutateAsync(data).then(() => {
+            setIsModalOpen(false);
+            setSelectedPayment(null);
+            setSelectedMembership(null);
+            setSelectedPaymentInfo(null);
+        });
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedPayment(null);
+        setSelectedMembership(null);
+        setSelectedPaymentInfo(null);
+    };
+
     return (
         <>
             <Typography variant="h4" className="!mb-4 text-black">
@@ -230,348 +259,26 @@ function MembershipDetailsView({ person }: { person: PersonDetails }) {
             </Typography>
             <div>
                 {membership && membership?.length > 0 ? (
-                    membership
-                        .sort((b) => (b.membership.is_member ? -1 : 1))
-                        .map((membership) => (
-                            <div
-                                key={membership.membership.id}
-                                className={`mb-1 ${!membership.membership.is_member ? 'bg-red-100' : ''}`}
-                            >
-                                <div className="flex flex-row gap-2 align-middle self-center p-2">
-                                    <Typography variant="h6">{membership.organization.organization.name}</Typography>
-                                    {!membership.membership.is_member && (
-                                        <div className="self-center">(Medlemskapet er avsluttet)</div>
-                                    )}
-                                </div>
-                                <Card className="p-2">
-                                    <Typography variant="h6">Betalinger</Typography>
-                                    <div className="bg-gray-50 p-2 mb-2">
-                                        <p>
-                                            <strong>Kontonummer:</strong>{' '}
-                                            {membership.organization.organization.bank_account_number}
-                                        </p>
-                                    </div>
-                                    {isMobile ? (
-                                        <TableMobile membership={membership} person={person} />
-                                    ) : (
-                                        <TableDesktop membership={membership} person={person} />
-                                    )}
-                                </Card>
-                            </div>
-                        ))
+                    <MembershipTable
+                        key={'membership.membership.id'}
+                        memberships={membership}
+                        onEditPayment={handleEditClick}
+                    />
                 ) : (
                     <p>Ingen medlemskap</p>
+                )}
+
+                {isModalOpen && (
+                    <PaymentEditModal
+                        open={isModalOpen}
+                        onClose={handleCloseModal}
+                        payment={selectedPayment}
+                        membership={selectedMembership}
+                        userPaymentInfo={selectedPaymentInfo}
+                        onSave={handleSaveClick}
+                    />
                 )}
             </div>
         </>
     );
-}
-
-interface TableProps {
-    membership: MembershipDetails;
-    person: PersonDetails;
-}
-function TableMobile({ membership, person }: TableProps) {
-    const { user } = useAppContext();
-    const [editingPaymentId, setEditingPaymentId] = useState<number>();
-    const userPaymentInfoFn = useAddOrUpdatePaymentStatus(person.person.id);
-
-    const handleEditClick = (paymentDetailId: number) => {
-        setEditingPaymentId(paymentDetailId);
-    };
-
-    const handleSaveClick = (data: CreateOrUpdateUserPaymentDetailsFormFields) => {
-        userPaymentInfoFn.mutateAsync(data).then(() => {
-            setEditingPaymentId(undefined);
-        });
-    };
-
-    const handleCancelEdit = () => {
-        setEditingPaymentId(undefined);
-    };
-
-    return (
-        <Table className="w-full">
-            <TableHead>
-                <TableRow>
-                    <TableCell>År</TableCell>
-                    <TableCell>Beløp</TableCell>
-                    <TableCell>Status</TableCell>
-                    {user?.isAdmin && <TableCell></TableCell>}
-                </TableRow>
-            </TableHead>
-            <TableBody>
-                {membership.organization.paymentDetails
-                    .filter((p) => {
-                        const userPaymentInfo = membership.paymentDetails.find((pd) => pd.payment_detail_id === p.id);
-                        return !p.deleted || userPaymentInfo?.payment_state == 'paid';
-                    })
-                    .map((payment, index) => {
-                        const userPaymentInfo = membership.paymentDetails.find(
-                            (pd) => pd.payment_detail_id === payment.id
-                        );
-                        const isEditing = editingPaymentId === payment.id;
-
-                        return (
-                            <Fragment key={index}>
-                                <TableRow className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}>
-                                    <TableCell>{payment.year}</TableCell>
-
-                                    {isEditing && user?.isAdmin ? (
-                                        <EditablePaymentRow
-                                            payment={payment}
-                                            membership={membership}
-                                            userPaymentInfo={userPaymentInfo}
-                                            onSave={handleSaveClick}
-                                            onCancel={handleCancelEdit}
-                                            isMobile={true}
-                                        />
-                                    ) : (
-                                        <>
-                                            <TableCell>
-                                                {userPaymentInfo?.amount
-                                                    ? `NOK ${userPaymentInfo.amount.toFixed(2)}`
-                                                    : '-'}
-                                            </TableCell>
-                                            <TableCell>
-                                                {userPaymentInfo?.payment_state === 'paid' ? 'Betalt' : 'Ikke betalt'}
-                                            </TableCell>
-                                            {user?.isAdmin && (
-                                                <TableCell>
-                                                    <IconButton onClick={() => handleEditClick(payment.id)}>
-                                                        <EditIcon />
-                                                    </IconButton>
-                                                </TableCell>
-                                            )}
-                                        </>
-                                    )}
-                                </TableRow>
-                                {!isEditing && (
-                                    <TableRow>
-                                        <TableCell colSpan={user?.isAdmin ? 5 : 4}>
-                                            <Box sx={{ margin: 1 }}>
-                                                <Grid container spacing={2}>
-                                                    <List dense disablePadding>
-                                                        <CustomListItemText
-                                                            primary={'Frist'}
-                                                            secondary={
-                                                                payment.payment_deadline
-                                                                    ? format(
-                                                                          new Date(payment.payment_deadline),
-                                                                          'dd/MM/yyyy'
-                                                                      )
-                                                                    : ''
-                                                            }
-                                                        />
-                                                        <CustomListItemText
-                                                            primary={'Forsinkelsesgebyr'}
-                                                            secondary={
-                                                                <div className="w-max">
-                                                                    NOK {payment.late_fee?.toFixed(2)}
-                                                                </div>
-                                                            }
-                                                        />
-                                                        {userPaymentInfo?.payment_state == 'paid' && (
-                                                            <CustomListItemText
-                                                                primary={'Betalt'}
-                                                                secondary={
-                                                                    <div className="w-max">
-                                                                        NOK {userPaymentInfo?.amount?.toFixed(2)}
-                                                                    </div>
-                                                                }
-                                                            />
-                                                        )}
-                                                    </List>
-                                                </Grid>
-                                            </Box>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </Fragment>
-                        );
-                    })}
-            </TableBody>
-        </Table>
-    );
-}
-
-function TableDesktop({ membership, person }: TableProps) {
-    const { user } = useAppContext();
-    const [editingPaymentId, setEditingPaymentId] = useState<number>();
-    const userPaymentInfoFn = useAddOrUpdatePaymentStatus(person.person.id);
-
-    const handleEditClick = (paymentDetailId: number) => {
-        setEditingPaymentId(paymentDetailId);
-    };
-
-    const handleSaveClick = (data: CreateOrUpdateUserPaymentDetailsFormFields) => {
-        userPaymentInfoFn.mutateAsync(data).then(() => {
-            setEditingPaymentId(undefined);
-        });
-    };
-
-    const handleCancelEdit = () => {
-        setEditingPaymentId(undefined);
-    };
-
-    return (
-        <Table className="w-full">
-            <TableHead>
-                <TableRow>
-                    <TableCell>År</TableCell>
-                    <TableCell>Beløp</TableCell>
-                    <TableCell>Betalt</TableCell>
-                    <TableCell>Frist</TableCell>
-                    <TableCell>Forsinkelsesgebyr</TableCell>
-                    <TableCell>Status</TableCell>
-                    {user?.isAdmin && <TableCell></TableCell>}
-                </TableRow>
-            </TableHead>
-            <TableBody>
-                {membership.organization.paymentDetails
-                    .filter((p) => {
-                        const userPaymentInfo = membership.paymentDetails.find((pd) => pd.payment_detail_id === p.id);
-                        return !p.deleted || userPaymentInfo?.payment_state == 'paid';
-                    })
-                    .map((payment, index) => {
-                        const userPaymentInfo = getPaymentDetail(payment, membership);
-                        const isEditing = editingPaymentId === payment.id;
-
-                        return (
-                            <TableRow
-                                key={index}
-                                className={`${userPaymentInfo?.payment_state != 'paid' ? 'bg-red-100' : ''}`}
-                            >
-                                <TableCell>{payment.year}</TableCell>
-                                <TableCell>NOK {payment.amount!.toFixed(2)}</TableCell>
-
-                                {isEditing && user?.isAdmin ? (
-                                    <EditablePaymentRow
-                                        payment={payment}
-                                        membership={membership}
-                                        userPaymentInfo={userPaymentInfo}
-                                        onSave={handleSaveClick}
-                                        onCancel={handleCancelEdit}
-                                    />
-                                ) : (
-                                    <>
-                                        <TableCell>
-                                            {userPaymentInfo?.payment_state == 'paid' && userPaymentInfo?.amount
-                                                ? `NOK ${userPaymentInfo.amount.toFixed(2)}`
-                                                : '-'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {payment.payment_deadline
-                                                ? format(new Date(payment.payment_deadline), 'dd/MM/yyyy')
-                                                : ''}
-                                        </TableCell>
-                                        <TableCell>NOK {payment.late_fee?.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                            {userPaymentInfo?.payment_state === 'paid' ? 'Betalt' : 'Ikke betalt'}
-                                        </TableCell>
-                                        {user?.isAdmin && (
-                                            <TableCell>
-                                                <IconButton onClick={() => handleEditClick(payment.id)}>
-                                                    <EditIcon />
-                                                </IconButton>
-                                            </TableCell>
-                                        )}
-                                    </>
-                                )}
-                            </TableRow>
-                        );
-                    })}
-            </TableBody>
-        </Table>
-    );
-}
-
-// Extract EditablePaymentRow component
-function EditablePaymentRow({
-    payment,
-    membership,
-    userPaymentInfo,
-    onSave,
-    onCancel,
-    isMobile = false,
-}: {
-    payment: PaymentDetailDatabase;
-    membership: MembershipDetails;
-    userPaymentInfo: any;
-    onSave: (data: CreateOrUpdateUserPaymentDetailsFormFields) => void;
-    onCancel: () => void;
-    isMobile?: boolean;
-}) {
-    const { control, handleSubmit } = useForm<CreateOrUpdateUserPaymentDetailsFormFields>({
-        defaultValues: {
-            id: userPaymentInfo?.id,
-            membership_id: membership.membership.id,
-            payment_detail_id: payment.id,
-            amount:
-                userPaymentInfo?.payment_state == 'unpaid'
-                    ? payment.amount
-                    : (userPaymentInfo?.amount ?? payment.amount ?? 0),
-            paymentState: userPaymentInfo?.payment_state ?? 'unpaid',
-            payment_date: userPaymentInfo?.payment_date ?? null,
-        },
-    });
-
-    const saveForm = handleSubmit((data) => {
-        onSave(data);
-    });
-
-    return (
-        <>
-            {!isMobile && (
-                <TableCell>
-                    <Controller
-                        control={control}
-                        name="amount"
-                        render={({ field }) => (
-                            <TextField
-                                {...field}
-                                size="small"
-                                type="number"
-                                fullWidth={isMobile}
-                                value={field.value}
-                                onChange={(e) => {
-                                    const value = parseFloat(e.target.value);
-                                    field.onChange(isNaN(value) ? 0 : value);
-                                }}
-                            />
-                        )}
-                    />
-                </TableCell>
-            )}
-            {!isMobile && (
-                <TableCell>
-                    {payment.payment_deadline ? format(new Date(payment.payment_deadline), 'dd/MM/yyyy') : ''}
-                </TableCell>
-            )}
-            {!isMobile && <TableCell>NOK {payment.late_fee?.toFixed(2)}</TableCell>}
-            <TableCell>
-                <FormControl fullWidth>
-                    <Controller
-                        control={control}
-                        name="paymentState"
-                        render={({ field }) => (
-                            <Select {...field} size="small" displayEmpty value={field.value}>
-                                <MenuItem value={'unpaid'}>Ikke betalt</MenuItem>
-                                <MenuItem value={'paid'}>Betalt</MenuItem>
-                            </Select>
-                        )}
-                    />
-                </FormControl>
-            </TableCell>
-            <TableCell>
-                <IconButton onClick={saveForm}>
-                    <SaveAltIcon />
-                </IconButton>
-            </TableCell>
-        </>
-    );
-}
-
-function getPaymentDetail(paymentDetail: PaymentDetailDatabase, membership: MembershipDetails) {
-    return membership.paymentDetails.find((pd) => pd.payment_detail_id === paymentDetail.id);
 }
