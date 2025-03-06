@@ -55,16 +55,17 @@ function LoginProvider({ children }: PropsWithChildren<unknown>) {
     const navigate = useNavigate();
     const location = useLocation();
     const initialLoggedIn = useRef(loggedInUser != null);
-
+    const currentPage = pages.find((page) => page.url === location.pathname);
+    const currentPageRoles = currentPage?.roles ?? [];
     useEffect(() => {
-        console.log('loggedInUser', loggedInUser, initialLoggedIn.current);
-        if (!initialLoggedIn.current && loggedInUser) {
+        console.log('loggedInUser', loggedInUser, initialLoggedIn.current, currentPage);
+        if (!initialLoggedIn.current && loggedInUser && currentPageRoles.length > 0) {
             const defaultPage = defaultPages[loggedInUser.roles[0]];
             const pageUrl = pages.find((page) => page.name === defaultPage)?.url ?? '/user';
             navigate(pageUrl, { replace: true });
         }
     }, [loggedInUser]);
-    if (loggedInUser == null && location.pathname.includes('login') == false) {
+    if (loggedInUser == null && location.pathname.includes('login') == false && currentPageRoles.length > 0) {
         return <LoginMagicLinkPage />;
     }
     return (

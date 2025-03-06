@@ -43,6 +43,24 @@ export const pages: PageDetail[] = [
         label: 'User',
     },
     {
+        name: 'blog',
+        url: `/blog`,
+        roles: [],
+        label: 'Nyheter',
+    },
+    {
+        name: 'about_us',
+        url: `/about`,
+        roles: [],
+        label: 'Om oss',
+    },
+    {
+        name: 'our_history',
+        url: `/history`,
+        roles: [],
+        label: 'Vår historie',
+    },
+    {
         name: 'user-admin',
         url: `/user-admin`,
         roles: ['admin'],
