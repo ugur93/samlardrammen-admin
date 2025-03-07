@@ -173,6 +173,7 @@ function ToolbarMenu() {
 function UserButton() {
     const { user } = useAppContext();
     const logoutUser = useLogout();
+    const navigate = useNavigate();
     if (user) {
         return (
             <div className="flex items-center space-x-4">
@@ -190,8 +191,8 @@ function UserButton() {
     }
     return (
         <Button
-            className=" text-white py-1 px-3 rounded hover:bg-blue-600"
-            onClick={() => (window.location.href = '/login')}
+            className="!bg-red-100 text-white py-1 px-3 rounded hover:!bg-red-200"
+            onClick={() => navigate('/login')}
         >
             Logg inn
         </Button>
