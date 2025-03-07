@@ -1,47 +1,104 @@
-import {
-    Box,
-    Chip,
-    Container,
-    Divider,
-    Grid,
-    List,
-    ListItem,
-    Stack,
-    Typography,
-    useMediaQuery,
-    useTheme,
-} from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
-import { compareDesc } from 'date-fns';
-import { useState } from 'react';
-import BlogListingSkeleton from '../components/BlogListingSkeleton';
-import BlogListItem from '../components/BlogListItem';
-import { BLOG_CATEGORIES, BlogItem, blogQueryKeys, fetchBlogPostsByCategory } from '../services/blogService';
-import PageTemplate from './PageTemplate';
-// Import Material icons
 import AnnouncementIcon from '@mui/icons-material/Announcement';
 import ArticleIcon from '@mui/icons-material/Article';
 import EventIcon from '@mui/icons-material/Event';
 import FeedIcon from '@mui/icons-material/Feed';
+import {
+    Box,
+    Chip,
+    Container,
+    Grid,
+    Stack,
+    Typography,
+    useMediaQuery,
+    useTheme
+} from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
+import { compareDesc } from 'date-fns';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useSearchParams } from 'react-router';
+import BlogListingSkeleton from '../components/BlogListingSkeleton';
+import BlogListItem from '../components/BlogListItem';
+import { useBlogNavigation } from '../contexts/BlogNavigationContext';
+import { BLOG_CATEGORIES, BlogItem, blogQueryKeys, fetchBlogPostsByCategory } from '../services/blogService';
+import PageTemplate from './PageTemplate';
 
 export const BlogListingPage = () => {
-    const [activeTab, setActiveTab] = useState<string>('all');
+    const { activeCategory, setActiveCategory, scrollPosition, setScrollPosition } = useBlogNavigation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+    const listRef = useRef<HTMLDivElement>(null);
+    const [searchParams] = useSearchParams();
+    const location = useLocation();
+    const [hasRestored, setHasRestored] = useState(false);
+    const scrollListenerRef = useRef<boolean>(false);
+
+    // Check for category in URL params
+    useEffect(() => {
+        const categoryParam = searchParams.get('category');
+        if (categoryParam && BLOG_CATEGORIES.some((cat) => cat.id === categoryParam)) {
+            setActiveCategory(categoryParam);
+        }
+    }, [searchParams, setActiveCategory]);
 
     const { data, isLoading, error } = useQuery({
-        queryKey: blogQueryKeys.list(activeTab),
-        queryFn: () => fetchBlogPostsByCategory(activeTab === 'all' ? '' : activeTab),
+        queryKey: blogQueryKeys.list(activeCategory),
+        queryFn: () => fetchBlogPostsByCategory(activeCategory === 'all' ? '' : activeCategory),
         staleTime: 5 * 60 * 1000, // 5 minutes
     });
+
+    // Restore scroll position ONCE when component loads and data is ready
+    useEffect(() => {
+        if (!isLoading && !hasRestored && scrollPosition > 0 && data) {
+            // Small delay to ensure DOM is fully rendered
+            const timer = setTimeout(() => {
+                window.scrollTo({
+                    top: scrollPosition,
+                    behavior: 'auto', // Use 'auto' instead of 'smooth' to prevent visual jitter
+                });
+                setHasRestored(true);
+            }, 100);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading, scrollPosition, hasRestored, data]);
+
+    // Save scroll position before navigation, with throttling
+    useEffect(() => {
+        // Don't attach listener until we've restored scroll position (or if no need to restore)
+        if (isLoading || (!hasRestored && scrollPosition > 0)) {
+            return;
+        }
+
+        if (scrollListenerRef.current) return; // Prevent duplicate listeners
+
+        scrollListenerRef.current = true;
+
+        let ticking = false;
+        const handleScroll = () => {
+            if (!ticking) {
+                // Use requestAnimationFrame to throttle updates
+                window.requestAnimationFrame(() => {
+                    setScrollPosition(window.scrollY);
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            scrollListenerRef.current = false;
+        };
+    }, [isLoading, hasRestored, scrollPosition, setScrollPosition]);
 
     // Get icon component based on icon name
     const getIconComponent = (iconName?: string) => {
         switch (iconName) {
             case 'article':
                 return <ArticleIcon fontSize="small" />;
-            case 'feed':
+            case 'news':
                 return <FeedIcon fontSize="small" />;
             case 'event':
                 return <EventIcon fontSize="small" />;
@@ -65,8 +122,13 @@ export const BlogListingPage = () => {
           })
         : [];
 
+    // Reset scroll tracking when changing tabs
     const handleTabChange = (categoryId: string) => {
-        setActiveTab(categoryId);
+        setActiveCategory(categoryId);
+        // Reset scroll tracking state
+        setScrollPosition(0);
+        setHasRestored(true);
+        window.scrollTo(0, 0);
     };
 
     // Render category chips based on screen size
@@ -80,18 +142,19 @@ export const BlogListingPage = () => {
                             <Chip
                                 label={category.name}
                                 onClick={() => handleTabChange(category.id)}
-                                color={activeTab === category.id ? 'primary' : 'default'}
-                                variant={activeTab === category.id ? 'filled' : 'outlined'}
+                                color={activeCategory === category.id ? 'primary' : 'default'}
+                                variant={activeCategory === category.id ? 'filled' : 'outlined'}
                                 size="small"
                                 icon={getIconComponent(category.icon)}
                                 sx={{
                                     width: '100%',
                                     height: '32px',
                                     fontSize: '0.8rem',
-                                    fontWeight: activeTab === category.id ? 600 : 400,
+                                    fontWeight: activeCategory === category.id ? 600 : 400,
                                     '& .MuiChip-icon': {
                                         marginLeft: 0.5,
-                                        color: activeTab === category.id ? 'inherit' : theme.palette.text.secondary,
+                                        color:
+                                            activeCategory === category.id ? 'inherit' : theme.palette.text.secondary,
                                     },
                                 }}
                             />
@@ -117,18 +180,18 @@ export const BlogListingPage = () => {
                             key={category.id}
                             label={category.name}
                             onClick={() => handleTabChange(category.id)}
-                            color={activeTab === category.id ? 'primary' : 'default'}
-                            variant={activeTab === category.id ? 'filled' : 'outlined'}
+                            color={activeCategory === category.id ? 'primary' : 'default'}
+                            variant={activeCategory === category.id ? 'filled' : 'outlined'}
                             size="small"
                             icon={getIconComponent(category.icon)}
                             sx={{
-                                fontWeight: activeTab === category.id ? 600 : 400,
+                                fontWeight: activeCategory === category.id ? 600 : 400,
                                 px: 0.5,
                                 mb: isTablet ? 0.5 : 0,
                                 fontSize: '0.8rem',
                                 '& .MuiChip-icon': {
                                     marginLeft: 0.5,
-                                    color: activeTab === category.id ? 'inherit' : theme.palette.text.secondary,
+                                    color: activeCategory === category.id ? 'inherit' : theme.palette.text.secondary,
                                 },
                             }}
                         />
@@ -154,16 +217,11 @@ export const BlogListingPage = () => {
                     </Box>
                 ) : (
                     <>
-                        <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
-                            {sortedBlogPosts.map((post, index) => (
-                                <Box key={post.id}>
-                                    <ListItem disablePadding sx={{ py: 2 }}>
-                                        <BlogListItem blog={post} />
-                                    </ListItem>
-                                    {index < sortedBlogPosts.length - 1 && <Divider component="li" />}
-                                </Box>
+                        <Stack spacing={2} ref={listRef}>
+                            {sortedBlogPosts.map((post) => (
+                                <BlogListItem key={post.id} blog={post} />
                             ))}
-                        </List>
+                        </Stack>
 
                         {sortedBlogPosts.length === 0 && (
                             <Box sx={{ mt: 4, textAlign: 'center' }}>

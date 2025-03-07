@@ -84,7 +84,7 @@ export const AppContextProvider: React.FC<AppContextProviderProps> = ({ children
         <AppContext.Provider
             value={{
                 user: loggedInUser,
-                isAdmin: loggedInUser?.roles.includes('admin') ?? false,
+                isAdmin: loggedInUser?.roles?.includes('admin') ?? false,
                 roles: loggedInUser?.roles ?? [],
                 pages: getPages(loggedInUser?.roles ?? []),
             }}

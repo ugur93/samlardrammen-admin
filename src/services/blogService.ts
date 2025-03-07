@@ -43,9 +43,9 @@ export interface BlogCategory {
 
 export const BLOG_CATEGORIES: BlogCategory[] = [
     { id: 'all', name: 'Tüm Yazılar', slug: '', icon: 'article' },
-    { id: 'blog', name: 'Haberler', slug: 'Blog', icon: 'feed' },
-    { id: 'events', name: 'Etkinlikler', slug: 'events', icon: 'event' },
-    { id: 'announcements', name: 'Duyurular', slug: 'announcements', icon: 'announcement' },
+    { id: 'news', name: 'Haberler', slug: 'news', icon: 'feed' },
+    { id: 'events', name: 'Etkinlikler', slug: 'events', icon: 'events' },
+    { id: 'announcement', name: 'Duyurular', slug: 'announcement', icon: 'announcement' },
     { id: 'transfered_blogs', name: 'Eski yazilar', slug: 'transfered_blogs', icon: 'announcement' },
 ];
 
@@ -113,14 +113,15 @@ export const getCategoryFromFullSlug = (fullSlug: string): string => {
     return 'blog'; // Default to 'blog' if no category found
 };
 
-export const fetchBlogPostsByCategory = async (category: string): Promise<BlogItems> => {
+export const fetchBlogPostsByCategory = async (category?: string): Promise<BlogItems> => {
     try {
         const storyblokApi = getStoryblokApi();
-        const path = category ? `${category}/` : 'blog/';
+        const path = category ? `${category}/` : '';
 
         const { data } = await storyblokApi.get(`cdn/stories`, {
             version: 'published',
             starts_with: path,
+            excluding_slugs: category ? undefined : 'transfered_blogs/*',
             sort_by: 'first_published_at:desc:string',
             per_page: 10,
             page: 1,

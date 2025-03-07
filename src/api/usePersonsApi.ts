@@ -1,3 +1,4 @@
+import { User } from '@supabase/supabase-js';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { LoggedInUser } from '../context/AppContext';
 import supabase from '../supabase';
@@ -13,8 +14,15 @@ import { mapPersonResponse, PersonDetails } from '../types/personTypes';
 export const QueryKeys = {
     loggedInUser: ['logged-in-user'],
     fetchPersons: ['persons'],
-    fetchPersonByEmail: (email: string) => ['person', 'email', email],
-    fetchPersonById: (id?: string | number) => ['person', 'id', id],
+    fetchPersonByEmail: (email: string) => [...QueryKeys.fetchPersonBy(), 'email', email],
+    fetchPersonByUserIdOrEmail: (id?: string | number, email?: string) => [
+        ...QueryKeys.fetchPersonBy(),
+        'idmail',
+        id,
+        email,
+    ],
+    fetchPersonBy: () => ['person', 'by'],
+    fetchPersonById: (id?: string | number) => [...QueryKeys.fetchPersonBy(), 'id', id],
 };
 
 const fetchPersons = async (): Promise<PersonDetails[]> => {
@@ -106,7 +114,7 @@ export function useGetPersons() {
 
 export function useGetPersonById(id?: string) {
     const { data } = useSuspenseQuery<PersonDetails | null, Error>({
-        queryKey: QueryKeys.fetchPersonById(id), // Unique key for the query
+        queryKey: QueryKeys.fetchPersonById(id?.toString()), // Unique key for the query
         queryFn: () => fetchPersonById(id), // Function to fetch data
     });
 
@@ -189,6 +197,7 @@ export function useCreatePersonMutation() {
             existingPerson?: PersonDetails | null;
         }) => {
             const personRef = supabase.from('person');
+            const adressRef = supabase.from('address');
             const personDbData = {
                 id: person.personId ?? undefined,
                 firstname: person.firstname,
@@ -215,20 +224,31 @@ export function useCreatePersonMutation() {
             const personId = result.data[0].id;
 
             const address = person.address;
-            const resultaddress = await supabase.from('address').insert([
-                {
-                    person_id: result.data[0].id,
-                    addressLine1: address.addressLine1,
-                    addressLine2: address.addressLine2,
-                    postcode: address.postcode,
-                    city: address.city,
-                },
-            ]);
+            const updatedAdress = {
+                id: person.address?.id,
+                person_id: result.data[0].id,
+                addressLine1: address.addressLine1,
+                addressLine2: address.addressLine2,
+                postcode: address.postcode,
+                city: address.city,
+            };
+            if (!updatedAdress.id) {
+                delete updatedAdress.id;
+            }
+            const resultaddress = updatedAdress.id
+                ? await adressRef.update(updatedAdress).eq('id', updatedAdress.id!).select()
+                : await adressRef
+                      .insert([
+                          {
+                              ...updatedAdress,
+                          },
+                      ])
+                      .select();
 
             await updateMembership(personId, person, existingPerson);
             if (resultaddress.error) throw new Error(resultaddress.error.message);
 
-            await qc.resetQueries({ queryKey: QueryKeys.fetchPersonById(personId.toString()) });
+            await qc.resetQueries({ queryKey: QueryKeys.fetchPersonBy() });
             await qc.refetchQueries({ queryKey: QueryKeys.fetchPersons });
         },
     });
@@ -321,16 +341,24 @@ export const loginMutation = () => {
 };
 
 export const useLoggedInUser = () => {
-    return useSuspenseQuery<LoggedInUser | null>({
+    const user = useSuspenseQuery<User | null>({
         queryKey: QueryKeys.loggedInUser,
         queryFn: async () => {
             console.log('Fetching logged in user');
             const user = await supabase.auth.getUser();
             if (user.error) return null;
-            const personDetails = (await fetchPersonByUserIdOrEmail(user.data.user.id, user.data.user.email))!;
+            return user.data.user;
+        },
+    }).data;
+
+    return useSuspenseQuery<LoggedInUser | null>({
+        queryKey: QueryKeys.fetchPersonByUserIdOrEmail(user?.id, user?.email),
+        queryFn: async () => {
+            if (!user) return null;
+            const personDetails = (await fetchPersonByUserIdOrEmail(user.id, user.email))!;
 
             return {
-                user: user.data.user,
+                user: user,
                 details: personDetails,
                 isAdmin: personDetails?.person?.roles?.includes('admin') ?? false,
                 roles: personDetails?.person?.roles ?? [],

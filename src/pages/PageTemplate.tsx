@@ -16,8 +16,7 @@ import {
 } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider/LocalizationProvider';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { QueryClient } from '@tanstack/react-query';
 import 'dayjs/locale/en-gb';
 import React, { PropsWithChildren, Suspense, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router';
@@ -37,17 +36,14 @@ export const queryClient = new QueryClient({
 });
 export default function PageTemplate({ children }: PropsWithChildren<unknown>) {
     return (
-        <QueryClientProvider client={queryClient}>
-            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'en-gb'}>
-                <AppContextProvider>
-                    <Box sx={{ flexGrow: 1 }}>
-                        <CustomAppBar />
-                    </Box>
-                    <LoginProvider>{children}</LoginProvider>
-                </AppContextProvider>
-            </LocalizationProvider>
-            <ReactQueryDevtools />
-        </QueryClientProvider>
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'en-gb'}>
+            <AppContextProvider>
+                <Box sx={{ flexGrow: 1 }}>
+                    <CustomAppBar />
+                </Box>
+                <LoginProvider>{children}</LoginProvider>
+            </AppContextProvider>
+        </LocalizationProvider>
     );
 }
 function LoginProvider({ children }: PropsWithChildren<unknown>) {
