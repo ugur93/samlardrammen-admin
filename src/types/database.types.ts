@@ -248,7 +248,7 @@ export type Database = {
           id: number
           person_id: number
           person_related_id: number
-          relasjon_type: string
+          relation_type: string
         }
         Insert: {
           created_at?: string
@@ -256,7 +256,7 @@ export type Database = {
           id?: number
           person_id: number
           person_related_id: number
-          relasjon_type: string
+          relation_type: string
         }
         Update: {
           created_at?: string
@@ -264,7 +264,7 @@ export type Database = {
           id?: number
           person_id?: number
           person_related_id?: number
-          relasjon_type?: string
+          relation_type?: string
         }
         Relationships: [
           {

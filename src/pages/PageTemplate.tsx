@@ -36,7 +36,7 @@ export const queryClient = new QueryClient({
 });
 export default function PageTemplate({ children }: PropsWithChildren<unknown>) {
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'en-gb'}>
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'nb'}>
             <AppContextProvider>
                 <Box sx={{ flexGrow: 1 }}>
                     <CustomAppBar />

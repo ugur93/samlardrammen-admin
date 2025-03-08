@@ -6,6 +6,8 @@ export type OrganizationsDatabase = Database['public']['Tables']['organization']
 export type PaymentDetailDatabase = Database['public']['Tables']['payment_detail']['Row'];
 export type MembershipDatabase = Database['public']['Tables']['membership']['Row'];
 export type PaymentInfoDatabase = Database['public']['Tables']['payment_info']['Row'];
+export type RelationInfoDatabase = Database['public']['Tables']['person_relation']['Row'];
+export type RelationInfoUpdateDatabase = Database['public']['Tables']['person_relation']['Insert'];
 
 type OrganzationResponse = OrganizationsDatabase & {
     payment_detail: PaymentDetailDatabase[];
@@ -17,12 +19,17 @@ type MembershipResponse = MembershipDatabase & {
 type PersonResponse = PersonDatabase & {
     membership?: MembershipResponse[];
     address?: AdressDatabase[];
+    relations: RelationsResponse[];
+};
+export type RelationsResponse = RelationInfoDatabase & {
+    relatedPerson: PersonDatabase;
 };
 export interface PersonDetails {
     person: PersonDatabase;
     address?: AdressDatabase;
     membership?: MembershipDetails[];
     membershipRemoved?: MembershipDetails[];
+    relations: RelationsResponse[];
     name: string;
 }
 
@@ -61,5 +68,6 @@ export function mapPersonResponse(person?: PersonResponse | null): PersonDetails
         })),
         address: person.address ? person.address[0] : undefined,
         name: `${person.firstname} ${person.lastname}`,
+        relations: person.relations,
     };
 }

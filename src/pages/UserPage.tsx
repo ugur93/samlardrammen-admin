@@ -7,8 +7,7 @@ import {
     List,
     Paper,
     TextField,
-    Typography,
-    useTheme,
+    Typography
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 
@@ -21,6 +20,7 @@ import CustomListItemText from '../components/CustomListItemText';
 import { FormDatePicker } from '../components/FormDatePicker';
 import MembershipTable from '../components/MembershipTable';
 import PaymentEditModal from '../components/PaymentEditModal';
+import { RelationsTable } from '../components/RelationsTable';
 import { useAppContext } from '../context/AppContext';
 import { CreateOrUpdateUserPaymentDetailsFormFields, mapToFormValues, UserFormFields } from '../types/formTypes';
 import {
@@ -31,6 +31,7 @@ import {
     PersonDetails,
 } from '../types/personTypes';
 import PageTemplate from './PageTemplate';
+
 export default function UserDetailsPage() {
     return (
         <PageTemplate>
@@ -60,6 +61,7 @@ export const UserDetails: React.FC = () => {
     const { register, handleSubmit, reset } = methods;
 
     const onSubmit = (data: UserFormFields) => {
+        console.log('submit', data);
         createPersonFn.mutate({ person: data, existingPerson: userDetails });
         reset(mapToFormValues(getUserDetails()));
         setIsEditing(false);
@@ -74,6 +76,7 @@ export const UserDetails: React.FC = () => {
         const toAdressLine = (tekst?: string | null) => (tekst ? `${tekst},` : '');
         return `${toAdressLine(adresse?.addressLine1)}${toAdressLine(adresse?.addressLine2)}${toAdressLine(adresse?.city)}${toAdressLine(adresse?.postcode)}`;
     }
+
     const details = getUserDetails();
     if (!details) {
         return (
@@ -209,6 +212,17 @@ export const UserDetails: React.FC = () => {
                     </CardContent>
                 </Card>
 
+                {/* Add Relations Table */}
+                <Card className="mb-6">
+                    <CardContent>
+                        <RelationsTable
+                            relations={details.relations}
+                            personId={details.person.id}
+                            onRelationAdded={handleRefreshData}
+                        />
+                    </CardContent>
+                </Card>
+
                 <MembershipDetailsView person={details} />
             </div>
         </div>
@@ -217,7 +231,6 @@ export const UserDetails: React.FC = () => {
 
 function MembershipDetailsView({ person }: { person: PersonDetails }) {
     const membership = person?.membership;
-    const theme = useTheme();
     const [selectedPayment, setSelectedPayment] = useState<PaymentDetailDatabase | null>(null);
     const [selectedMembership, setSelectedMembership] = useState<MembershipDetails | null>(null);
     const [selectedPaymentInfo, setSelectedPaymentInfo] = useState<PaymentInfoDatabase | null>(null);

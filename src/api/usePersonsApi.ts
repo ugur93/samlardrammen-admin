@@ -1,5 +1,6 @@
 import { User } from '@supabase/supabase-js';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import { LoggedInUser } from '../context/AppContext';
 import supabase from '../supabase';
 import { Database } from '../types/database.types';
@@ -9,13 +10,14 @@ import {
     LoginFormValues,
     UserFormFields,
 } from '../types/formTypes';
-import { mapPersonResponse, PersonDetails } from '../types/personTypes';
+import { mapPersonResponse, PersonDatabase, PersonDetails } from '../types/personTypes';
 
 const personQUery =
-    '*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*))), relations:person_relation!person_id(*, relatert_person:person!person_related_id(*))';
+    '*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*))), relations:person_relation!person_id(*, relatedPerson:person!person_related_id(*))';
 export const QueryKeys = {
     loggedInUser: ['logged-in-user'],
     fetchPersons: ['persons'],
+    fetchPersonsSimple: ['persons', 'simple'],
     fetchPersonByEmail: (email: string) => [...QueryKeys.fetchPersonBy(), 'email', email],
     fetchPersonByUserIdOrEmail: (id?: string | number, email?: string) => [
         ...QueryKeys.fetchPersonBy(),
@@ -27,6 +29,11 @@ export const QueryKeys = {
     fetchPersonById: (id?: string | number) => [...QueryKeys.fetchPersonBy(), 'id', id],
 };
 
+const fetchPersonsSimple = async (): Promise<PersonDatabase[]> => {
+    const { data, error } = await supabase.from('person').select('*');
+    if (error) throw new Error(error.message);
+    return data;
+};
 const fetchPersons = async (): Promise<PersonDetails[]> => {
     const { data, error } = await supabase.from('person').select(personQUery);
     if (error) throw new Error(error.message);
@@ -56,6 +63,7 @@ const fetchPersons = async (): Promise<PersonDetails[]> => {
                     })),
                 address: person.address ? person.address[0] : undefined,
                 name: `${person.firstname} ${person.lastname}`,
+                relations: person.relations,
             }) as PersonDetails
     );
 };
@@ -99,6 +107,15 @@ const fetchPersonByUserId = async (user_id?: string): Promise<PersonDetails | nu
     }
     return mapPersonResponse(person);
 };
+
+export function useGetPersonsSimple() {
+    const { data } = useSuspenseQuery<PersonDatabase[], Error>({
+        queryKey: QueryKeys.fetchPersonsSimple, // Unique key for the query
+        queryFn: fetchPersonsSimple, // Function to fetch data
+    });
+
+    return data;
+}
 export function useGetPersons() {
     const { data } = useSuspenseQuery<PersonDetails[], Error>({
         queryKey: QueryKeys.fetchPersons, // Unique key for the query
@@ -194,7 +211,6 @@ export function useCreatePersonMutation() {
         }) => {
             const personRef = supabase.from('person');
             const adressRef = supabase.from('address');
-            console.log(person.birthdate);
             const personDbData = {
                 id: person.personId ?? undefined,
                 firstname: person.firstname,
@@ -202,7 +218,7 @@ export function useCreatePersonMutation() {
                 email: person.email,
                 phone_number: person.phoneNumber,
                 gender: person.gender,
-                birthdate: person.birthdate?.trim().length > 0 ? person.birthdate : null,
+                birthdate: person.birthdate?.trim().length > 0 ? dayjs(person.birthdate, 'DD/MM/YYYY').format() : null,
             };
             if (!personDbData.id) {
                 delete personDbData.id;
