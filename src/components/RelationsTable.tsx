@@ -62,7 +62,7 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
 
     useEffect(() => {
         // Filter out already related persons
-        const relatedPersonIds = relations.map((relation) => relation.relatedPerson.id);
+        const relatedPersonIds = relations.map((relation) => relation.relatedPerson?.id);
         const filtered = persons.filter((person) => !relatedPersonIds.includes(person.id) && person.id !== personId);
         setAvailablePersons(filtered);
     }, [relations, personId]);
@@ -114,6 +114,8 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
         setHasAccess(false);
         setEditingRelation(null);
     };
+
+    const relationsFiltered = relations.filter((relation) => relation.relatedPerson != null);
 
     // Mobile card view component
     const MobileRelationCard = ({ relation }: { relation: RelationsResponse }) => (
@@ -176,7 +178,7 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
                 )}
             </Box>
 
-            {relations && relations.length > 0 ? (
+            {relationsFiltered && relationsFiltered.length > 0 ? (
                 isMobile ? (
                     // Mobile view with cards
                     <Stack spacing={1}>
@@ -197,7 +199,7 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {relations
+                                {relationsFiltered
                                     .sort((a, b) => (a.id > b.id ? 1 : -1))
                                     .map((relation) => (
                                         <TableRow key={relation.id}>
