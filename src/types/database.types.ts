@@ -241,6 +241,48 @@ export type Database = {
         }
         Relationships: []
       }
+      person_relation: {
+        Row: {
+          created_at: string
+          has_access: boolean
+          id: number
+          person_id: number
+          person_related_id: number
+          relasjon_type: string
+        }
+        Insert: {
+          created_at?: string
+          has_access?: boolean
+          id?: number
+          person_id: number
+          person_related_id: number
+          relasjon_type: string
+        }
+        Update: {
+          created_at?: string
+          has_access?: boolean
+          id?: number
+          person_id?: number
+          person_related_id?: number
+          relasjon_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_relation_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_relation_person_related_id_fkey"
+            columns: ["person_related_id"]
+            isOneToOne: false
+            referencedRelation: "person"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

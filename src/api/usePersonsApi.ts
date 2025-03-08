@@ -11,6 +11,8 @@ import {
 } from '../types/formTypes';
 import { mapPersonResponse, PersonDetails } from '../types/personTypes';
 
+const personQUery =
+    '*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*))), relations:person_relation!person_id(*, relatert_person:person!person_related_id(*))';
 export const QueryKeys = {
     loggedInUser: ['logged-in-user'],
     fetchPersons: ['persons'],
@@ -26,9 +28,7 @@ export const QueryKeys = {
 };
 
 const fetchPersons = async (): Promise<PersonDetails[]> => {
-    const { data, error } = await supabase
-        .from('person')
-        .select('*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*)))');
+    const { data, error } = await supabase.from('person').select(personQUery);
     if (error) throw new Error(error.message);
     return data.map(
         (person) =>
@@ -61,11 +61,7 @@ const fetchPersons = async (): Promise<PersonDetails[]> => {
 };
 
 const fetchPersonByEmail = async (email?: string): Promise<PersonDetails | null> => {
-    const { data: person, error } = await supabase
-        .from('person')
-        .select('*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*)))')
-        .eq('email', email!)
-        .single();
+    const { data: person, error } = await supabase.from('person').select(personQUery).eq('email', email!).single();
     if (error) {
         console.error(error);
         return null;
@@ -76,7 +72,7 @@ const fetchPersonById = async (user_id?: string): Promise<PersonDetails | null> 
     if (!user_id) return null;
     const { data: person, error } = await supabase
         .from('person')
-        .select('*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*)))')
+        .select(personQUery)
         .filter('id', 'eq', user_id)
         .single();
     if (error) {
@@ -94,7 +90,7 @@ const fetchPersonByUserIdOrEmail = async (user_id?: string, email?: string): Pro
 const fetchPersonByUserId = async (user_id?: string): Promise<PersonDetails | null> => {
     const { data: person, error } = await supabase
         .from('person')
-        .select('*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*)))')
+        .select(personQUery)
         .filter('user_id', 'eq', user_id)
         .single();
     if (error) {
@@ -198,6 +194,7 @@ export function useCreatePersonMutation() {
         }) => {
             const personRef = supabase.from('person');
             const adressRef = supabase.from('address');
+            console.log(person.birthdate);
             const personDbData = {
                 id: person.personId ?? undefined,
                 firstname: person.firstname,
