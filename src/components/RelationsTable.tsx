@@ -32,6 +32,7 @@ import {
     useTheme,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { useGetPersonsSimple, useLoggedInUser } from '../api/usePersonsApi';
 import { useAddUpdateRelationMutation, useDeleteRelationMutation } from '../api/useRelationsApi';
 import { PersonDatabase, RelationsResponse } from '../types/personTypes';
@@ -122,7 +123,9 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
         <Card sx={{ mb: 1, p: 2 }}>
             <Stack spacing={1}>
                 <Typography variant="subtitle1" fontWeight="bold">
-                    {relation.relatedPerson.firstname} {relation.relatedPerson.lastname}
+                    <Link to={`/user/${relation.relatedPerson.id}`}>
+                        {relation.relatedPerson.firstname} {relation.relatedPerson.lastname}
+                    </Link>
                 </Typography>
 
                 <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -204,7 +207,9 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
                                     .map((relation) => (
                                         <TableRow key={relation.id}>
                                             <TableCell>
-                                                {relation.relatedPerson.firstname} {relation.relatedPerson.lastname}
+                                                <Link to={`/user/${relation.relatedPerson.id}`}>
+                                                    {relation.relatedPerson.firstname} {relation.relatedPerson.lastname}
+                                                </Link>
                                             </TableCell>
                                             <TableCell>
                                                 {relationTypeLabels[relation.relation_type as RelationType] ||
