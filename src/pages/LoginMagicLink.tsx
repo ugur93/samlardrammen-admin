@@ -31,7 +31,6 @@ const LoginMagicLinkPage: React.FC = () => {
     });
 
     useEffect(() => {
-        console.log('location.pathname', location.pathname);
         if (location.pathname == '/auth/confirm') {
             loginWithHash();
         }

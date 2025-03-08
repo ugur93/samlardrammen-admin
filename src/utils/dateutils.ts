@@ -6,6 +6,5 @@ export function convertDateStringToOnlyDate(dateString?: string | null): string 
     if (isNaN(date.getTime())) {
         throw new Error('Invalid date string');
     }
-    console.log('date', date);
     return dayjs(date).format('DD/MM/YYYY');
 }

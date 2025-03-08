@@ -31,7 +31,6 @@ export const BlogContent = ({ content }: BlogContentProps) => {
     }
     const sanitizedContent = DOMPurify.sanitize(content as string);
 
-    console.log('sanitizedContent', content);
     return (
         <Box
             className="blog-content"

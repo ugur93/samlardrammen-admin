@@ -23,7 +23,6 @@ export function FormDatePicker({ name, label, editable = true }: FormDatePickerP
             control={control}
             name={name}
             render={({ field }) => {
-                console.log('field', field.value, dayjs(field.value, 'DD/MM/YYYY'));
                 return (
                     <DatePicker
                         className="!mt-2"
@@ -35,7 +34,6 @@ export function FormDatePicker({ name, label, editable = true }: FormDatePickerP
                             textField: { size: 'small', helperText: errors[name]?.message },
                         }}
                         onChange={(date) => {
-                            console.log('onchange', date, date?.locale('nb')?.format('DD/MM/YYYY'));
                             field.onChange(date?.format('DD/MM/YYYY'));
                         }}
                     />
