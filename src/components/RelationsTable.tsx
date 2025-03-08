@@ -32,7 +32,7 @@ import {
     useTheme,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { useGetPersonsSimple } from '../api/usePersonsApi';
+import { useGetPersonsSimple, useLoggedInUser } from '../api/usePersonsApi';
 import { useAddUpdateRelationMutation, useDeleteRelationMutation } from '../api/useRelationsApi';
 import { PersonDatabase, RelationsResponse } from '../types/personTypes';
 import { RelationType, relationTypeLabels } from '../types/relationTypes';
@@ -44,6 +44,7 @@ interface RelationsTableProps {
 
 export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, personId }) => {
     const theme = useTheme();
+    const user = useLoggedInUser();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const persons = useGetPersonsSimple();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -98,7 +99,7 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
     const confirmDelete = () => {
         if (!relationToDelete) return;
 
-        deleteRelationMutation.mutate(relationToDelete.id, {
+        deleteRelationMutation.mutate(relationToDelete, {
             onSuccess: () => {
                 setIsDeleteDialogOpen(false);
                 setRelationToDelete(null);
@@ -168,9 +169,11 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
         <Box>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">Relasjoner</Typography>
-                <Button variant="outlined" color="primary" size="small" onClick={() => setIsDialogOpen(true)}>
-                    Legg til relasjon
-                </Button>
+                {user?.isAdmin && (
+                    <Button variant="outlined" color="primary" size="small" onClick={() => setIsDialogOpen(true)}>
+                        Legg til relasjon
+                    </Button>
+                )}
             </Box>
 
             {relations && relations.length > 0 ? (
@@ -189,8 +192,8 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
                                 <TableRow>
                                     <TableCell>Navn</TableCell>
                                     <TableCell>Relasjon</TableCell>
-                                    <TableCell>Har tilgang</TableCell>
-                                    <TableCell align="right">Handlinger</TableCell>
+                                    {user?.isAdmin && <TableCell>Har tilgang</TableCell>}
+                                    {user?.isAdmin && <TableCell align="right">Handlinger</TableCell>}
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -205,38 +208,44 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
                                                 {relationTypeLabels[relation.relation_type as RelationType] ||
                                                     relation.relation_type}
                                             </TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    size="small"
-                                                    label={relation.has_access ? 'Ja' : 'Nei'}
-                                                    variant="outlined"
-                                                    sx={{
-                                                        borderRadius: '4px',
-                                                        backgroundColor: relation.has_access ? '#e8f5e9' : '#f5f5f5',
-                                                        borderColor: relation.has_access ? '#66bb6a' : '#bdbdbd',
-                                                        fontWeight: 'bold',
-                                                        '& .MuiChip-label': {
-                                                            color: relation.has_access ? '#2e7d32' : '#757575',
-                                                        },
-                                                    }}
-                                                />
-                                            </TableCell>
-                                            <TableCell align="right">
-                                                <IconButton
-                                                    size="small"
-                                                    color="primary"
-                                                    onClick={() => handleEditRelation(relation)}
-                                                >
-                                                    <EditIcon fontSize="small" />
-                                                </IconButton>
-                                                <IconButton
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={() => handleDeleteClick(relation)}
-                                                >
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                            </TableCell>
+                                            {user?.isAdmin && (
+                                                <TableCell>
+                                                    <Chip
+                                                        size="small"
+                                                        label={relation.has_access ? 'Ja' : 'Nei'}
+                                                        variant="outlined"
+                                                        sx={{
+                                                            borderRadius: '4px',
+                                                            backgroundColor: relation.has_access
+                                                                ? '#e8f5e9'
+                                                                : '#f5f5f5',
+                                                            borderColor: relation.has_access ? '#66bb6a' : '#bdbdbd',
+                                                            fontWeight: 'bold',
+                                                            '& .MuiChip-label': {
+                                                                color: relation.has_access ? '#2e7d32' : '#757575',
+                                                            },
+                                                        }}
+                                                    />
+                                                </TableCell>
+                                            )}
+                                            {user?.isAdmin && (
+                                                <TableCell align="right">
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        onClick={() => handleEditRelation(relation)}
+                                                    >
+                                                        <EditIcon fontSize="small" />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="error"
+                                                        onClick={() => handleDeleteClick(relation)}
+                                                    >
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </TableCell>
+                                            )}
                                         </TableRow>
                                     ))}
                             </TableBody>
