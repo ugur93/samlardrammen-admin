@@ -1,14 +1,4 @@
-import {
-    Box,
-    Button,
-    Card,
-    CardContent,
-    InputLabel,
-    List,
-    Paper,
-    TextField,
-    Typography
-} from '@mui/material';
+import { Box, Button, Card, CardContent, InputLabel, List, Paper, TextField, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 
 import { format } from 'date-fns';
@@ -215,11 +205,7 @@ export const UserDetails: React.FC = () => {
                 {/* Add Relations Table */}
                 <Card className="mb-6">
                     <CardContent>
-                        <RelationsTable
-                            relations={details.relations}
-                            personId={details.person.id}
-                            onRelationAdded={handleRefreshData}
-                        />
+                        <RelationsTable relations={details.relations} personId={details.person.id} />
                     </CardContent>
                 </Card>
 
