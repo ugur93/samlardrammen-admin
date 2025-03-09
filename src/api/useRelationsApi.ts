@@ -48,7 +48,6 @@ export function useAddUpdateRelationMutation() {
                 person_id: params.relatedPersonId,
                 person_related_id: params.personId,
                 relation_type: toRelationTypeRelatedPerson(params.relation_type),
-                has_access: false,
             };
             if (request1.id === undefined) {
                 delete request1.id;

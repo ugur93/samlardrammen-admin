@@ -108,14 +108,6 @@ export const UserDetails: React.FC = () => {
                                     />
 
                                     <FormDatePicker name="birthdate" label="Fødselsdato" />
-
-                                    {/* <TextField
-                                        size="small"
-                                        label="Epost"
-                                        type="email"
-                                        {...register('email')}
-                                        className="border p-2 w-full"
-                                    /> */}
                                     <TextField
                                         size="small"
                                         label="Telefon"
