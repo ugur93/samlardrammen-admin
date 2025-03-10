@@ -34,6 +34,7 @@ export const BlogNavigationProvider: React.FC<BlogNavigationProviderProps> = ({ 
         setScrollPosition(0);
     };
 
+    console.log('BlogNavigationProvider');
     return (
         <BlogNavigationContext.Provider
             value={{

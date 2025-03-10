@@ -1,17 +1,17 @@
 import { Box, Typography } from '@mui/material';
 import DOMPurify from 'dompurify';
-import { ReactNode } from 'react';
+import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { NODE_PARAGRAPH, render, RenderOptions } from 'storyblok-rich-text-react-renderer';
-import { RichTextContent } from '../services/blogService';
+import { NODE_PARAGRAPH, render, type RenderOptions } from 'storyblok-rich-text-react-renderer';
+import { type RichTextContent } from '../services/blogService';
 
 interface BlogContentProps {
     content: string | RichTextContent;
 }
 const renderconfig: RenderOptions = {
     nodeResolvers: {
-        [NODE_PARAGRAPH]: (children: ReactNode) => <p className="pt-2 pb-2">{children}</p>,
+        [NODE_PARAGRAPH]: (children: React.ReactNode) => <p className="pt-2 pb-2">{children}</p>,
     },
 };
 export const BlogContent = ({ content }: BlogContentProps) => {

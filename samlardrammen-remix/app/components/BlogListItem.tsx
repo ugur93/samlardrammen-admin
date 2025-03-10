@@ -5,7 +5,7 @@ import { Box, Button, Grid, Paper, Typography } from '@mui/material'; // Add But
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Link } from 'react-router';
-import { BlogItem } from '../services/blogService';
+import { type BlogItem } from '../services/blogService';
 import StoryblokImage from './StoryblokImage';
 
 interface BlogListItemProps {

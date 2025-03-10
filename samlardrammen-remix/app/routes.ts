@@ -8,5 +8,7 @@ export default [
         route('/login', './routes/login.tsx'),
         route('/user/:userId?', './routes/user.details.tsx'),
         route('/organization/:organizationId', './routes/organization.details.tsx'),
+        route('/blog', './routes/blogs.tsx'),
+        route('/blog/*', './routes/blogDetail.tsx'),
     ]),
 ] satisfies RouteConfig;

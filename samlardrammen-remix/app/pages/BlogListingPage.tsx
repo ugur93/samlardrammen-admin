@@ -10,8 +10,7 @@ import { useLocation, useSearchParams } from 'react-router';
 import BlogListingSkeleton from '../components/BlogListingSkeleton';
 import BlogListItem from '../components/BlogListItem';
 import { useBlogNavigation } from '../context/BlogNavigationContext';
-import { BLOG_CATEGORIES, BlogItem, blogQueryKeys, fetchBlogPostsByCategory } from '../services/blogService';
-import PageTemplate from './PageTemplate';
+import { BLOG_CATEGORIES, type BlogItem, blogQueryKeys, fetchBlogPostsByCategory } from '../services/blogService';
 
 export const BlogListingPage = () => {
     const { activeCategory, setActiveCategory, scrollPosition, setScrollPosition } = useBlogNavigation();
@@ -116,7 +115,7 @@ export const BlogListingPage = () => {
     // Reset scroll tracking when changing tabs
     const handleTabChange = (categoryId: string) => {
         setActiveCategory(categoryId);
-        // Reset scroll tracking state
+        // // Reset scroll tracking state
         setScrollPosition(0);
         setHasRestored(true);
         window.scrollTo(0, 0);
@@ -193,36 +192,34 @@ export const BlogListingPage = () => {
     };
 
     return (
-        <PageTemplate>
-            <Container maxWidth="lg" sx={{ mb: 8 }}>
-                {/* Responsive Category Filters - more compact */}
-                <Box sx={{ mb: 1, mt: 3 }}>{renderCategoryFilters()}</Box>
+        <Container maxWidth="lg" sx={{ mb: 8 }}>
+            {/* Responsive Category Filters - more compact */}
+            <Box sx={{ mb: 1, mt: 3 }}>{renderCategoryFilters()}</Box>
 
-                {isLoading ? (
-                    <BlogListingSkeleton isList={true} />
-                ) : error ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-                        <Typography color="error">
-                            Blog yazıları yüklenemedi. Lütfen daha sonra tekrar deneyiniz.
-                        </Typography>
-                    </Box>
-                ) : (
-                    <>
-                        <Stack spacing={2} ref={listRef}>
-                            {sortedBlogPosts.map((post) => (
-                                <BlogListItem key={post.id} blog={post} />
-                            ))}
-                        </Stack>
+            {isLoading ? (
+                <BlogListingSkeleton isList={true} />
+            ) : error ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+                    <Typography color="error">
+                        Blog yazıları yüklenemedi. Lütfen daha sonra tekrar deneyiniz.
+                    </Typography>
+                </Box>
+            ) : (
+                <>
+                    <Stack spacing={2} ref={listRef}>
+                        {sortedBlogPosts.map((post) => (
+                            <BlogListItem key={post.id} blog={post} />
+                        ))}
+                    </Stack>
 
-                        {sortedBlogPosts.length === 0 && (
-                            <Box sx={{ mt: 4, textAlign: 'center' }}>
-                                <Typography variant="h6">Bu kategoride şu anda blog yazısı bulunmamaktadır.</Typography>
-                            </Box>
-                        )}
-                    </>
-                )}
-            </Container>
-        </PageTemplate>
+                    {sortedBlogPosts.length === 0 && (
+                        <Box sx={{ mt: 4, textAlign: 'center' }}>
+                            <Typography variant="h6">Bu kategoride şu anda blog yazısı bulunmamaktadır.</Typography>
+                        </Box>
+                    )}
+                </>
+            )}
+        </Container>
     );
 };
 
