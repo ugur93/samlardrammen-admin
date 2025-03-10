@@ -1,0 +1,51 @@
+{
+  "name": "samlardrammen-remix",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "react-router dev --port 5151",
+    "start": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "next",
+    "@mui/material": "next",
+    "@mui/x-date-pickers": "next",
+    "@react-router/node": "^7.3.0",
+    "@storyblok/react": "^4.4.2",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.49.1",
+    "@tailwindcss/vite": "^4.0.12",
+    "@tanstack/react-query": "^5.67.2",
+    "@tanstack/react-query-devtools": "^5.67.2",
+    "@types/dompurify": "^3.2.0",
+    "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
+    "dompurify": "^3.2.4",
+    "isbot": "^5.1.23",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.2",
+    "react-markdown": "^10.1.0",
+    "react-router": "^7.3.0",
+    "remark-gfm": "^4.0.1",
+    "storyblok-rich-text-react-renderer": "^2.9.2",
+    "use-dehydrated-state": "^0.1.0"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^7.3.0",
+    "@tailwindcss/vite": "^4.0.12",
+    "@types/node": "^22.13.10",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vercel/node": "^5.1.12",
+    "@vercel/react-router": "^1.1.0",
+    "tailwindcss": "^4.0.12",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.1",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}
