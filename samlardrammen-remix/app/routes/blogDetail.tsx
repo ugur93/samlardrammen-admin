@@ -3,30 +3,21 @@ import BlogDetailPage from '../pages/BlogDetailPage';
 import { fetchBlogPostBySlug } from '../services/blogService';
 
 export function meta({ data: { blogPost } }: Route.MetaArgs<typeof loader>) {
-    console.log(blogPost);
     return [
         {
             title: blogPost.content.title,
-            openGraph: {
-                description: blogPost.content.preview,
-                title: blogPost.content.title,
-                images: [
-                    {
-                        url: blogPost.content.image?.filename,
-                    },
-                ],
-            },
-            twitter: {
-                description: blogPost.content.preview,
-                title: blogPost.content.title,
-                images: [
-                    {
-                        url: blogPost.content.image?.filename,
-                    },
-                ],
-            },
+        },
+        {
+            property: 'og:title',
+            content: blogPost.content.title,
+        },
+        {
+            property: 'og:image',
+            content: blogPost.content.image?.filename,
         },
         { name: 'description', content: blogPost.content.preview },
+        { name: 'og:locale', content: 'tr' },
+        { name: 'og:description', content: blogPost.content.preview },
     ];
 }
 
