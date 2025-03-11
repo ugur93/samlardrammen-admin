@@ -6,6 +6,4 @@ export default {
     // Server-side render by default, to enable SPA mode set this to `false`
     ssr: true,
     presets: [vercelPreset()],
-    serverBundles: ['@mui/icons-material'],
-    devServerPort: 5151,
 } satisfies Config;
