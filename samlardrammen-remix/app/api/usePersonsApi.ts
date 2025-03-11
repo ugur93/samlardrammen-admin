@@ -15,6 +15,7 @@ import { useGetSupabaseClient } from './useSupabase';
 
 const personQUery =
     '*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*))), relations:person_relation!person_id(*, relatedPerson:person!person_related_id(*))';
+const personQUery2 = '*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*)))';
 export const QueryKeys = {
     loggedInUser: ['logged-in-user'],
     fetchPersons: ['persons'],
@@ -37,7 +38,7 @@ const fetchPersonsSimple = async (): Promise<PersonDatabase[]> => {
     return data;
 };
 const fetchPersons = (supabase: SupabaseClient) => async (): Promise<PersonDetails[]> => {
-    const { data, error } = await supabase.from('person').select(personQUery);
+    const { data, error } = await supabase.from('person').select(personQUery2);
     if (error) throw new Error(error.message);
     return data.map(
         (person) =>
@@ -65,7 +66,7 @@ const fetchPersons = (supabase: SupabaseClient) => async (): Promise<PersonDetai
                     })),
                 address: person.address ? person.address[0] : undefined,
                 name: `${person.firstname} ${person.lastname}`,
-                relations: person.relations,
+                relations: [],
             }) as PersonDetails
     );
 };
