@@ -58,6 +58,9 @@ const LoginPage: React.FC = () => {
             email: formValues.email,
             password: formValues.password,
         });
+        if (!error) {
+            navigate('.', { replace: true });
+        }
     }
 
     const onChangePasswordSubmit = (data: ChangePasswordValues) => {

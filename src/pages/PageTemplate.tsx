@@ -34,6 +34,20 @@ export const queryClient = new QueryClient({
         },
     },
 });
+export const loader = async ({ request }: LoaderArgs) => {
+    try {
+        const client = getSupabaseServerClient(request);
+        const {
+            data: { session },
+        } = await client.auth.getSession();
+        if (session) {
+            return redirect('/dashboard');
+        }
+        return json({});
+    } catch (e) {
+        return json({});
+    }
+};
 export default function PageTemplate({ children }: PropsWithChildren<unknown>) {
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'nb'}>

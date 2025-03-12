@@ -16,12 +16,11 @@ import {
     useTheme,
 } from '@mui/material';
 import 'dayjs/locale/en-gb';
-import React, { Suspense, useEffect, useRef, type PropsWithChildren } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
+import React, { Suspense, type PropsWithChildren } from 'react';
+import { Outlet, useNavigate } from 'react-router';
 import { useLoggedInUser, useLogout } from '../api/usePersonsApi';
-import { AppContextProvider, defaultPages, pages, useAppContext } from '../context/AppContext';
+import { AppContextProvider, useAppContext } from '../context/AppContext';
 import { supabaseClientLoader } from '../loaders/supabaseloader';
-import LoginPage from './LoginPage';
 
 export async function loader() {
     const [supabaseloader] = await Promise.all([supabaseClientLoader()]);
@@ -43,50 +42,14 @@ export default function PageTemplate() {
     );
 }
 function LoginProvider({ children }: PropsWithChildren<unknown>) {
-    const { person: loggedInUser, isLoading } = useLoggedInUser();
+    const { isLoading } = useLoggedInUser();
 
-    const navigate = useNavigate();
-    const location = useLocation();
-    const initialLoggedIn = useRef(true);
-    const currentPage = pages.find((page) => page.url === location.pathname);
-    const currentPageRoles = currentPage?.roles ?? [];
-    const isLoginPage = location.pathname.includes('login') == true;
-    useEffect(() => {
-        initialLoggedIn.current = isLoading == false && loggedInUser != null;
-    }, [loggedInUser, isLoading]);
-    useEffect(() => {
-        console.debug(
-            'loggedInUser',
-            loggedInUser,
-            'initialLoggedIn',
-            initialLoggedIn.current,
-            'currentPage',
-            currentPage,
-            'isLoginPage',
-            isLoginPage,
-            'isLoading',
-            isLoading
-        );
-        if (isLoading) return;
-        if (
-            (isLoginPage && loggedInUser) ||
-            (!initialLoggedIn.current && loggedInUser && currentPageRoles.length > 0)
-        ) {
-            const defaultPage = defaultPages[loggedInUser.roles[0]];
-            const pageUrl = pages.find((page) => page.name === defaultPage)?.url ?? '/user';
-            navigate(pageUrl, { replace: true });
-        }
-    }, [loggedInUser]);
     if (isLoading) {
         return (
             <Stack alignItems="center">
                 <CircularProgress />
             </Stack>
         );
-    }
-    if (loggedInUser == null && !isLoginPage && currentPageRoles.length > 0) {
-        console.debug('IAM HERE', loggedInUser, isLoginPage, currentPageRoles);
-        return <LoginPage />;
     }
 
     return (

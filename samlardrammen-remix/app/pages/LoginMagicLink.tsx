@@ -3,13 +3,14 @@ import { type EmailOtpType } from '@supabase/supabase-js';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useLocation } from 'react-router';
-import { QueryKeys, useGetSupabaseClient } from '../api/usePersonsApi';
+import { useLocation, useNavigate } from 'react-router';
+import { useGetSupabaseClient } from '../api/useSupabase';
 import type { LoginFormValues } from '../types/formTypes';
 
 const LoginMagicLinkPage: React.FC = () => {
     const { register, handleSubmit, reset } = useForm<LoginFormValues>();
     const supabase = useGetSupabaseClient();
+    const navigate = useNavigate();
 
     const location = useLocation();
     const qc = useQueryClient();
@@ -44,7 +45,9 @@ const LoginMagicLinkPage: React.FC = () => {
         if (!token_hash || !type) return;
 
         const { error } = await supabase.auth.verifyOtp({ token_hash, type });
-        await qc.refetchQueries({ queryKey: QueryKeys.loggedInUser });
+        if (!error) {
+            navigate('.', { replace: true });
+        }
     }
 
     async function signInWithEmail(formValues: LoginFormValues) {
