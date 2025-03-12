@@ -3,7 +3,7 @@ import { supabaseClientLoader } from '../loaders/supabaseloader';
 import { OrganizationsPage } from '../pages/OrganizationsPage';
 
 export function meta({}: Route.MetaArgs) {
-    return [{ title: 'Medlemmer' }, { name: 'description', content: 'Medlemsliste' }];
+    return [{ title: 'Organisasjoner' }];
 }
 
 export async function loader() {

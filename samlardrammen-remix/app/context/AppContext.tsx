@@ -54,7 +54,7 @@ export const pages: PageDetail[] = [
     },
     {
         name: 'about_us',
-        url: `/about`,
+        url: `/about-us`,
         roles: [],
         label: 'Om oss',
     },

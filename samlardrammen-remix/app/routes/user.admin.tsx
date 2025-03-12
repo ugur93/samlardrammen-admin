@@ -11,7 +11,6 @@ export async function loader() {
     return { ...supabaseloader };
 }
 
-export default function UserAdmin({ loaderData }: Route.ComponentProps) {
-    console.log(loaderData);
+export default function UserAdmin() {
     return <UserAdminPage />;
 }

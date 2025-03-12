@@ -55,7 +55,7 @@ function LoginProvider({ children }: PropsWithChildren<unknown>) {
         initialLoggedIn.current = isLoading == false && loggedInUser != null;
     }, [loggedInUser, isLoading]);
     useEffect(() => {
-        console.log(
+        console.debug(
             'loggedInUser',
             loggedInUser,
             'initialLoggedIn',
@@ -85,7 +85,7 @@ function LoginProvider({ children }: PropsWithChildren<unknown>) {
         );
     }
     if (loggedInUser == null && !isLoginPage && currentPageRoles.length > 0) {
-        console.log('IAM HERE', loggedInUser, isLoginPage, currentPageRoles);
+        console.debug('IAM HERE', loggedInUser, isLoginPage, currentPageRoles);
         return <LoginPage />;
     }
 
@@ -145,7 +145,7 @@ function ToolbarMenu() {
     if (pages.length === 0) return;
     if (!isMobile) {
         return (
-            <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+            <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'flex' } }}>
                 {pages.map((page) => (
                     <Button
                         key={page.label}
@@ -203,7 +203,7 @@ function UserButton() {
     if (user) {
         return (
             <div className="flex items-center space-x-4">
-                <Link className="!text-white pr-4" href="#/user">
+                <Link className="!text-white pr-4" href="/user">
                     {user.details?.name ?? user.user?.email}
                 </Link>
                 <Button

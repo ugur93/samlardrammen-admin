@@ -47,7 +47,6 @@ import { FormDatePicker } from '../components/FormDatePicker';
 import MembershipPaymentRow from '../components/MembershipPaymentRow';
 import Searchfield from '../components/Searchfield';
 import TableFilterHeader from '../components/TableFilterHeader';
-import { base } from '../context/AppContext';
 import MembersTableProvider, {
     type FilterOption,
     type MembersTableData,
@@ -278,7 +277,7 @@ function TableMobile({ setCreateOrEdit }: TableProps) {
                     <Fragment key={personDetails.id + '-' + personDetails.name}>
                         <TableRow>
                             <TableCell>
-                                <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
+                                <Link href={`user/${personDetails.id}`}>{personDetails.name}</Link>
                             </TableCell>
                             <TableCell>{personDetails.age}</TableCell>
                             <TableCell className="w-[100px]">{personDetails.email}</TableCell>
@@ -351,7 +350,7 @@ function TableDesktop({ setCreateOrEdit }: TableProps) {
                 {rows?.map((personDetails) => (
                     <TableRow key={'desktop' + '-' + personDetails.id}>
                         <TableCell className="w-[150px]">
-                            <Link href={`${base}/user/${personDetails.id}`}>{personDetails.name}</Link>
+                            <Link href={`/user/${personDetails.id}`}>{personDetails.name}</Link>
                         </TableCell>
                         <TableCell>{personDetails.age}</TableCell>
                         <TableCell>{personDetails.birthdate}</TableCell>

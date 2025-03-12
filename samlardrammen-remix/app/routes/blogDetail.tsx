@@ -29,6 +29,6 @@ export async function loader({ params }: Route.LoaderArgs) {
     return { ...supabaseloader, blogPost };
 }
 
-export default function BlogDetail({ loaderData }: Route.ComponentProps) {
+export default function BlogDetail() {
     return <BlogDetailPage />;
 }

@@ -28,7 +28,6 @@ type UserPageProps = {
     userId?: string;
 };
 export default function UserDetailsPage({ userId }: UserPageProps) {
-    console.log(userId);
     return <UserDetails userId={userId} />;
 }
 
