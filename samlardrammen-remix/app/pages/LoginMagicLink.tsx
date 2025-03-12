@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router';
+import { QueryKeys } from '../api/usePersonsApi';
 import { useGetSupabaseClient } from '../api/useSupabase';
 import type { LoginFormValues } from '../types/formTypes';
 
@@ -46,6 +47,7 @@ const LoginMagicLinkPage: React.FC = () => {
 
         const { error } = await supabase.auth.verifyOtp({ token_hash, type });
         if (!error) {
+            await qc.refetchQueries({ queryKey: QueryKeys.loggedInUser });
             navigate('.', { replace: true });
         }
     }
