@@ -2,7 +2,7 @@ import { type RouteConfig, index, layout, route } from '@react-router/dev/routes
 
 export default [
     layout('./pages/PageTemplate.tsx', [
-        index('./routes/blogs.tsx'),
+        index('./routes/blogs.tsx', { id: 'blogsindex' }),
         route('/user-admin', './routes/user.admin.tsx'),
         route('/organization-admin', './routes/organization.admin.tsx'),
         route('/login', './routes/login.tsx'),
