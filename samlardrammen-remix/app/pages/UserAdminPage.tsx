@@ -205,7 +205,7 @@ const MembersTable: React.FC = () => {
         });
 
         // Create CSV header
-        const csvHeader = 'Navn,Email,Betalingsstatus\n';
+        const csvHeader = 'Navn;Email;Betalingsstatus\n';
 
         // Create CSV content
         // We need to properly escape fields, especially those with newlines
@@ -221,7 +221,7 @@ const MembersTable: React.FC = () => {
                 };
 
                 return [escapeCsvField(row.name), escapeCsvField(row.email), escapeCsvField(row.paymentStatus)].join(
-                    ','
+                    ';'
                 );
             })
             .join('\n');
