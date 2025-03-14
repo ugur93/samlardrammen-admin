@@ -1,3 +1,4 @@
+import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import {
@@ -127,7 +128,9 @@ export const UserAdminPage: React.FC = () => {
     return (
         <Box sx={{ width: '100%', bgcolor: 'background.paper' }}>
             <MembersTableProvider>
-                <MembersTable />
+                <React.Suspense>
+                    <MembersTable />
+                </React.Suspense>
             </MembersTableProvider>
         </Box>
     );
@@ -137,7 +140,8 @@ const MembersTable: React.FC = () => {
     // React Query to fetch data
     const data = useGetPersons();
     useGetOrganizations();
-    const { page, rowsPerPage, filteredRows, handleChangeRowsPerPage, setPage, setSearchTerm } = useMembersTable();
+    const { page, rowsPerPage, filteredRows, handleChangeRowsPerPage, setPage, setSearchTerm, selectedOptions } =
+        useMembersTable();
     const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean | undefined>(false);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -164,6 +168,76 @@ const MembersTable: React.FC = () => {
         const mailList = filteredRows.map((d) => d.email).join(';');
         navigator.clipboard.writeText(mailList);
     }
+
+    // Export to CSV function
+    function exportToCsv() {
+        // Get the organization filter if it exists
+        const organizationFilter = selectedOptions.find((option) => option.label == orgFilterLabel);
+
+        // Create CSV data
+        const csvData = filteredRows.map((row) => {
+            // Get filtered memberships for this person
+            const memberships = row.membership || [];
+            let filteredMemberships = memberships;
+
+            if (organizationFilter && organizationFilter.value.length > 0) {
+                filteredMemberships =
+                    memberships?.filter((m) => organizationFilter.value.includes(m.organization.organization.name)) ||
+                    [];
+            }
+
+            // Create payment status string for each membership
+            // Each organization status on a new line for better readability in Excel/spreadsheets
+            const membershipStatus = filteredMemberships
+                .map((m) => {
+                    const orgName = m.organization.organization.name || '';
+                    const isPaid = m.paymentDetails.some((p) => p.payment_state === 'paid');
+                    return `${orgName}: ${isPaid ? 'Betalt' : 'Ikke betalt'}`;
+                })
+                .join('\n'); // Use newlines to separate organizations in the CSV cell
+
+            // Return CSV row, replacing null/undefined with empty strings
+            return {
+                name: row.name || '',
+                email: row.email || '',
+                paymentStatus: membershipStatus || '',
+            };
+        });
+
+        // Create CSV header
+        const csvHeader = 'Navn,Email,Betalingsstatus\n';
+
+        // Create CSV content
+        // We need to properly escape fields, especially those with newlines
+        const csvContent = csvData
+            .map((row) => {
+                // Escape fields properly for CSV format
+                // For fields containing newlines, quotes, or commas, wrap in quotes and escape internal quotes
+                const escapeCsvField = (field: string) => {
+                    // Replace any double quotes with two double quotes (CSV escaping)
+                    const escaped = field.replace(/"/g, '""');
+                    // Always wrap in quotes to handle potential commas and newlines
+                    return `"${escaped}"`;
+                };
+
+                return [escapeCsvField(row.name), escapeCsvField(row.email), escapeCsvField(row.paymentStatus)].join(
+                    ','
+                );
+            })
+            .join('\n');
+
+        // Create and download file
+        const blob = new Blob([csvHeader + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `medlemsliste-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     return (
         <Container sx={{ mt: 4 }}>
             <Typography variant="h4" gutterBottom color="black">
@@ -193,9 +267,12 @@ const MembersTable: React.FC = () => {
                         Legg til medlem
                     </Button>
 
-                    <div className="flex flex-row items-center">
+                    <div className="flex flex-row items-center gap-2">
                         <Button onClick={copyMailListToClipboard} variant="text">
                             Kopier mailliste
+                        </Button>
+                        <Button onClick={exportToCsv} variant="outlined" startIcon={<DownloadIcon />}>
+                            Last ned CSV
                         </Button>
                     </div>
                 </div>

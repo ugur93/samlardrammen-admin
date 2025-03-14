@@ -279,8 +279,8 @@ export function useCreatePersonMutation() {
             await updateMembership(supabase, personId, person, existingPerson);
             if (resultaddress.error) throw new Error(resultaddress.error.message);
 
-            await qc.invalidateQueries({ queryKey: QueryKeys.fetchPersonBy() });
-            await qc.invalidateQueries({ queryKey: QueryKeys.fetchPersons });
+            await qc.refetchQueries({ queryKey: QueryKeys.fetchPersonBy() });
+            await qc.refetchQueries({ queryKey: QueryKeys.fetchPersons });
         },
     });
 }
