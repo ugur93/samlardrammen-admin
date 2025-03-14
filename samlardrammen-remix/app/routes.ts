@@ -4,6 +4,7 @@ export default [
     layout('./pages/PageTemplate.tsx', [
         index('./routes/blogs.tsx', { id: 'blogsindex' }),
         route('/login', './routes/login.tsx'),
+        route('/login2', './routes/login2.tsx'),
         route('/auth/confirm', './routes/login.tsx', { id: 'confirm' }),
         route('/blog', './routes/blogs.tsx'),
         route('/blog/*', './routes/blogDetail.tsx'),

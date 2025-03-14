@@ -182,6 +182,7 @@ export function useAddOrUpdatePaymentStatus(userId: number) {
 
             qc.refetchQueries({ queryKey: QueryKeys.fetchPersonById(userId.toString()) });
             qc.setQueryData(QueryKeys.fetchPersons, (data: PersonDetails[]) => {
+                console.log('Updating payment state for person', userId, paymentInfo.membership_id, result.data[0]);
                 return (
                     data?.map((p) => {
                         if (p.person.id === userId) {

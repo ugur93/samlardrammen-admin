@@ -46,14 +46,14 @@ import CustomListItemText from '../components/CustomListItemText';
 import { FormDatePicker } from '../components/FormDatePicker';
 import MembershipPaymentRow from '../components/MembershipPaymentRow';
 import Searchfield from '../components/Searchfield';
-import TableFilterHeader from '../components/TableFilterHeader';
+import TableFilterHeader, { orgFilterLabel } from '../components/TableFilterHeader';
 import MembersTableProvider, {
     type FilterOption,
     type MembersTableData,
     useMembersTable,
 } from '../context/MembersTableContext';
 import { type UserFormFields, mapToFormValues } from '../types/formTypes';
-import { type PersonDetails, genderVisningsnavn } from '../types/personTypes';
+import { type MembershipDetails, type PersonDetails, genderVisningsnavn } from '../types/personTypes';
 
 interface HeadCell {
     disablePadding: boolean;
@@ -253,7 +253,19 @@ interface TableProps {
 }
 function TableMobile({ setCreateOrEdit }: TableProps) {
     const data = useGetPersons();
-    const { visibleRows: rows, order, orderBy, createSortHandler } = useMembersTable();
+    const { visibleRows: rows, order, orderBy, createSortHandler, selectedOptions } = useMembersTable();
+
+    // Filter organizations based on selected filters
+    const getFilteredMemberships = (membership: MembershipDetails[]) => {
+        const organizationFilter = selectedOptions.find((option) => option.label == orgFilterLabel);
+        // If "All" is selected, show all memberships
+        if (organizationFilter == null || organizationFilter.value.length === 0) {
+            return membership;
+        }
+
+        return membership?.filter((m) => organizationFilter.value.includes(m.organization.organization.name));
+    };
+
     return (
         <Table stickyHeader size="small" padding="normal" className="!w-[300px]">
             <TableHead>
@@ -294,7 +306,7 @@ function TableMobile({ setCreateOrEdit }: TableProps) {
 
                                         <div className="flex flex-col gap-2 w-fit">
                                             <Typography variant="subtitle1">Medlemskap/betaling</Typography>
-                                            {personDetails.membership?.map((m) => (
+                                            {getFilteredMemberships(personDetails.membership)?.map((m) => (
                                                 <MembershipPaymentRow
                                                     key={m.organization.organization.id}
                                                     membership={m}
@@ -324,7 +336,18 @@ function TableMobile({ setCreateOrEdit }: TableProps) {
 }
 function TableDesktop({ setCreateOrEdit }: TableProps) {
     const data = useGetPersons();
-    const { visibleRows: rows, order, orderBy, createSortHandler } = useMembersTable();
+    const { visibleRows: rows, order, orderBy, createSortHandler, selectedOptions } = useMembersTable();
+
+    // Filter organizations based on selected filters
+    const getFilteredMemberships = (membership: MembershipDetails[]) => {
+        const organizationFilter = selectedOptions.find((option) => option.label == orgFilterLabel);
+        // If "All" is selected, show all memberships
+        if (organizationFilter == null || organizationFilter.value.length === 0) {
+            return membership;
+        }
+
+        return membership?.filter((m) => organizationFilter.value.includes(m.organization.organization.name));
+    };
 
     return (
         <Table stickyHeader size="small">
@@ -358,7 +381,7 @@ function TableDesktop({ setCreateOrEdit }: TableProps) {
                         <TableCell>{personDetails.gender}</TableCell>
                         <TableCell>
                             <div className="flex flex-col gap-2">
-                                {personDetails.membership?.map((m) => (
+                                {getFilteredMemberships(personDetails.membership)?.map((m) => (
                                     <MembershipPaymentRow
                                         key={m.organization.organization.id}
                                         membership={m}

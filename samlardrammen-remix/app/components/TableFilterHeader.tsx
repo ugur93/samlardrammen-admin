@@ -23,13 +23,13 @@ import { type MembershipDetails } from '../types/personTypes';
 interface TableFilterHeaderProps {
     className?: string;
 }
+export const orgFilterLabel = 'organization';
 
 const TableFilterHeader: React.FC<TableFilterHeaderProps> = ({ className }) => {
     const orgs = useGetOrganizations().filter((d) => d.paymentDetails.some((p) => !p.deleted));
     const { selectedOptions, setSelectedOptions } = useMembersTable();
 
     // Organization filter
-    const orgFilterLabel = 'organization';
     const selectedOrganizations = useMemo(() => {
         return selectedOptions.find((p) => p.label === orgFilterLabel)?.value ?? [];
     }, [selectedOptions, orgFilterLabel]);
