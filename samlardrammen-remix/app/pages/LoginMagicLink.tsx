@@ -69,6 +69,7 @@ const LoginMagicLinkPage: React.FC = () => {
                                         {...register('email')}
                                         placeholder="Email"
                                         type="email"
+                                        autoComplete="on"
                                         required
                                         className="border rounded-md p-2 w-full"
                                     />

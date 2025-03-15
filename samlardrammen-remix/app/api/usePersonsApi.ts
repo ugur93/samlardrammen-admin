@@ -16,11 +16,13 @@ import { useGetSupabaseClient } from './useSupabase';
 const personQUery =
     '*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*))), relations:person_relation!person_id(*, relatedPerson:person!person_related_id(*))';
 const personQUery2 = '*, address(*), membership(*, payment_info(*), organization(*, payment_detail(*)))';
+const personQUerySimple = '*';
 export const QueryKeys = {
     loggedInUser: ['logged-in-user'],
     fetchPersons: ['persons'],
     fetchPersonsSimple: ['persons', 'simple'],
     fetchPersonByEmail: (email: string) => [...QueryKeys.fetchPersonBy(), 'email', email],
+    fetchPersonByEmailSimple: (email: string) => [...QueryKeys.fetchPersonBy(), 'email', 'simple', email],
     fetchPersonByUserIdOrEmail: (id?: string | number, email?: string) => [
         ...QueryKeys.fetchPersonBy(),
         'idmail',
@@ -70,7 +72,20 @@ const fetchPersons = (supabase: SupabaseClient) => async (): Promise<PersonDetai
             }) as PersonDetails
     );
 };
-
+const fetchPersonByEmailSimple =
+    (supabase: supabasejs.SupabaseClient) =>
+    async (email?: string): Promise<PersonDetails | null> => {
+        const { data: person, error } = await supabase
+            .from('person')
+            .select(personQUerySimple)
+            .eq('email', email!)
+            .single();
+        if (error) {
+            console.error(error);
+            return null;
+        }
+        return mapPersonResponse(person);
+    };
 const fetchPersonByEmail =
     (supabase: supabasejs.SupabaseClient) =>
     async (email?: string): Promise<PersonDetails | null> => {
@@ -143,6 +158,15 @@ export function useGetPersonById(id?: string) {
     const { data } = useSuspenseQuery<PersonDetails | null, Error>({
         queryKey: QueryKeys.fetchPersonById(id?.toString()), // Unique key for the query
         queryFn: () => fetchPersonById(supabase)(id), // Function to fetch data
+    });
+
+    return data;
+}
+export function useGetPersonByEmailSimple(email: string) {
+    const supabase = useGetSupabaseClient();
+    const { data } = useSuspenseQuery<PersonDetails | null, Error>({
+        queryKey: QueryKeys.fetchPersonByEmailSimple(email), // Unique key for the query
+        queryFn: () => fetchPersonByEmailSimple(supabase)(email), // Function to fetch data
     });
 
     return data;
@@ -419,3 +443,25 @@ export const useLogout = () => {
         },
     });
 };
+
+// Add this new hook to update person roles
+export function useUpdatePersonRoles() {
+    const supabaseClient = useGetSupabaseClient();
+    const queryClient = useQueryClient();
+
+    return async (personId: number, email: string, user_id: string, roles: string[]) => {
+        try {
+            const { error } = await supabaseClient.from('person').update({ roles, user_id }).eq('id', personId);
+
+            if (error) throw error;
+
+            // Invalidate queries to refresh the data
+            await queryClient.refetchQueries({ queryKey: QueryKeys.fetchPersonByEmailSimple(email) });
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating person roles:', error);
+            return { success: false, error };
+        }
+    };
+}
