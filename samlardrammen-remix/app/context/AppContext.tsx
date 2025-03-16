@@ -76,6 +76,12 @@ export const pages: PageDetail[] = [
         roles: ['admin'],
         label: 'Organisasjoner',
     },
+    {
+        name: 'user-registered-admin',
+        url: `/user-registered-admin`,
+        roles: ['admin'],
+        label: 'Registrerte brukere',
+    },
 ];
 
 function getPages(roles: string[]): PageDetail[] {

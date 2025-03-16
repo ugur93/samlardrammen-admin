@@ -213,7 +213,7 @@ export const BlogListingPage = () => {
                     </Stack>
 
                     {sortedBlogPosts.length === 0 && (
-                        <Box sx={{ mt: 4, textAlign: 'center' }}>
+                        <Box sx={{ mt: 4, textAlign: 'center', color: 'black' }}>
                             <Typography variant="h6">Bu kategoride şu anda blog yazısı bulunmamaktadır.</Typography>
                         </Box>
                     )}
