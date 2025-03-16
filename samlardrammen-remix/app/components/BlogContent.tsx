@@ -3,14 +3,34 @@ import DOMPurify from 'dompurify';
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { NODE_PARAGRAPH, render, type RenderOptions } from 'storyblok-rich-text-react-renderer';
+import { NODE_HEADING, NODE_PARAGRAPH, render, type RenderOptions } from 'storyblok-rich-text-react-renderer';
 import { type RichTextContent } from '../services/blogService';
-
+const HeadingComponent = ({ children, level = 1 }: HeadingProps) => {
+    switch (level) {
+        case 1:
+            return <h1 className="text-3xl mt-5 mb-3 text-primary font-extrabold">{children}</h1>;
+        case 2:
+            return <h2 className="text-2xl mt-4 mb-2.5 text-primary font-bold">{children}</h2>;
+        case 3:
+            return <h3 className="text-xl mt-3.5 mb-2 text-primary font-bold">{children}</h3>;
+        case 4:
+            return <h4 className="text-lg mt-3 mb-1.5 text-primary font-semibold">{children}</h4>;
+        case 5:
+            return <h5 className="text-base mt-2.5 mb-1.5 text-primary font-semibold">{children}</h5>;
+        case 6:
+            return <h6 className="text-sm mt-2.5 mb-1.5 text-primary font-semibold">{children}</h6>;
+        default:
+            return <h1 className="text-3xl mt-5 mb-3 text-primary font-extrabold">{children}</h1>;
+    }
+};
 interface BlogContentProps {
     content: string | RichTextContent;
 }
 const renderconfig: RenderOptions = {
     nodeResolvers: {
+        [NODE_HEADING]: (children: React.ReactNode, props) => (
+            <HeadingComponent level={props.level}>{children}</HeadingComponent>
+        ),
         [NODE_PARAGRAPH]: (children: React.ReactNode) => <p className="pt-2 pb-2">{children}</p>,
     },
 };
