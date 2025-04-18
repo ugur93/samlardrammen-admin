@@ -37,7 +37,6 @@ const LoginPage: React.FC = () => {
         const token_hash = queryParams.get('token_hash')!;
         const type = queryParams.get('type') as EmailOtpType;
 
-        console.log('token_hash', token_hash, type);
         const { error } = await supabase.auth.verifyOtp({ token_hash, type });
         console.log('error', error);
     }

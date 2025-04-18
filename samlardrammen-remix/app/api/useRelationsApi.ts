@@ -94,8 +94,10 @@ export function useDeleteRelationMutation() {
                 .delete()
                 .eq('person_id', relationToDelete.person_related_id)
                 .eq('person_related_id', relationToDelete.person_id);
-            await qc.resetQueries({ queryKey: QueryKeys.fetchPersonBy() });
             return { success: true };
+        },
+        onSuccess: () => {
+            qc.refetchQueries({ queryKey: QueryKeys.fetchPersonBy() });
         },
     });
 }
