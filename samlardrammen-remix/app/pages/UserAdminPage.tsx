@@ -44,6 +44,7 @@ import { Controller, FormProvider, type SubmitHandler, useForm } from 'react-hoo
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useCreatePersonMutation, useGetPersons } from '../api/usePersonsApi';
 import CustomListItemText from '../components/CustomListItemText';
+import EmailModal from '../components/EmailModal';
 import { FormDatePicker } from '../components/FormDatePicker';
 import MembershipPaymentRow from '../components/MembershipPaymentRow';
 import Searchfield from '../components/Searchfield';
@@ -139,6 +140,8 @@ export const UserAdminPage: React.FC = () => {
 const MembersTable: React.FC = () => {
     // React Query to fetch data
     const data = useGetPersons();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     useGetOrganizations();
     const { page, rowsPerPage, filteredRows, handleChangeRowsPerPage, setPage, setSearchTerm, selectedOptions } =
         useMembersTable();
@@ -240,9 +243,19 @@ const MembersTable: React.FC = () => {
 
     return (
         <Container sx={{ mt: 4 }}>
+            <React.Suspense>
+                <EmailModal
+                    open={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    initialRecipients={filteredRows
+                        .map((d) => d.email)
+                        .filter((d) => d !== '' && d !== undefined && d !== null)}
+                />
+            </React.Suspense>
             <Typography variant="h4" gutterBottom color="black">
                 Medlemmer
             </Typography>
+
             <Box className="pb-2 text-black flex flex-row gap-4">
                 <Box className="flex flex-row gap-2 items-center">
                     <Typography fontSize={12} variant="subtitle1">
@@ -268,6 +281,16 @@ const MembersTable: React.FC = () => {
                     </Button>
 
                     <div className="flex flex-row items-center gap-2">
+                        <div>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={() => setIsModalOpen(true)}
+                                sx={{ mb: 2 }}
+                            >
+                                Send epost
+                            </Button>
+                        </div>
                         <Button onClick={copyMailListToClipboard} variant="text">
                             Kopier mailliste
                         </Button>
