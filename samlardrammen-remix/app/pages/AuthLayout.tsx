@@ -5,7 +5,6 @@ import getSupabaseServerClient from '../loaders/supabaseServerClient';
 export async function loader({ request }: Route.LoaderArgs) {
     const client = getSupabaseServerClient(request);
     const session = await client.auth.getUserIdentities();
-    console.log(session);
     if (session.data == null || session.error) {
         return redirect('/login');
     }
