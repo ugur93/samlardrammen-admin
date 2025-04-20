@@ -67,18 +67,15 @@ export default function MembersTableProvider({ children }: PropsWithChildren<unk
     }
     const filteredRows = useMemo(() => {
         return data.map(mapPersondetailsToTableData).filter((d) => filterOption(d, selectedOptions));
-    }, [selectedOptions, data]);
+    }, [selectedOptions, data, searchTerm]);
+
     const visibleRows = useMemo(
         () =>
             filteredRows
                 .sort(getComparator(order, orderBy))
-                .filter((d) => {
-                    return searchTerm && searchTerm.trim().length > 0
-                        ? toSearchValue(d).includes(searchTerm.toLowerCase())
-                        : true;
-                })
+
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-        [order, orderBy, selectedOptions, data, rowsPerPage, page, searchTerm]
+        [order, orderBy, selectedOptions, data, rowsPerPage, page, filteredRows]
     );
     const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof MembersTableData) => {
         const isAsc = orderBy === property && order === 'asc';
@@ -95,14 +92,18 @@ export default function MembersTableProvider({ children }: PropsWithChildren<unk
     };
     function filterOption(data: MembersTableData, selectedOptions: FilterOption[]) {
         let result = true;
+        if (searchTerm && searchTerm.trim().length > 0) {
+            result = result && toSearchValue(data).includes(searchTerm.toLowerCase());
+        }
         if (selectedOptions.length == 0) {
-            return true;
+            return result;
         }
         selectedOptions.forEach((option) => {
             if (option.filter) {
                 result = result && option.filter(data);
             }
         });
+
         return result;
     }
 

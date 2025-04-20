@@ -15,6 +15,7 @@ export default [
             route('/user-registered-admin', './routes/user.registered.admin.tsx'),
             route('/organization-admin', './routes/organization.admin.tsx'),
             route('/sendEmail', './routes/email.resource.ts'),
+            route('/templates', './routes/templates.ts'),
             route('/organization/:organizationId', './routes/organization.details.tsx'),
         ]),
         layout('./pages/AuthLayout.tsx', [route('/user/:userId?', './routes/user.details.tsx')]),

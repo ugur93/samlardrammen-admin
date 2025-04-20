@@ -1,5 +1,4 @@
 'use client';
-import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import EmailIcon from '@mui/icons-material/Email';
 import {
@@ -15,8 +14,11 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
+import DialogActions from '@mui/material/DialogActions';
+import MenuItem from '@mui/material/MenuItem';
 import { useMutation } from '@tanstack/react-query';
-import React, { lazy, useEffect } from 'react';
+import React, { lazy, useEffect, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import 'react-quill-new/dist/quill.snow.css';
 const ReactQuill = lazy(() => import('react-quill-new'));
@@ -60,8 +62,6 @@ const EmailModal: React.FC<EmailModalProps> = ({ open, onClose, initialRecipient
     });
 
     // Watch form fields for UI updates
-    const recipientInput = useWatch({ control, name: 'recipientInput' });
-    const bccInput = useWatch({ control, name: 'bccInput' });
     const recipients = useWatch({ control, name: 'recipients' });
     const bcc = useWatch({ control, name: 'bcc' });
 
@@ -140,19 +140,11 @@ const EmailModal: React.FC<EmailModalProps> = ({ open, onClose, initialRecipient
         return false;
     };
 
-    const handleAddRecipient = () => {
-        validateAndAddEmail(getValues('recipientInput'), 'recipient');
-    };
-
     const handleRemoveRecipient = (email: string) => {
         setValue(
             'recipients',
             recipients.filter((item) => item !== email)
         );
-    };
-
-    const handleAddBcc = () => {
-        validateAndAddEmail(getValues('bccInput'), 'bcc');
     };
 
     const handleRemoveBcc = (email: string) => {
@@ -187,35 +179,57 @@ const EmailModal: React.FC<EmailModalProps> = ({ open, onClose, initialRecipient
         });
     };
 
-    // Handle key press for recipients and bcc inputs
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, fieldType: 'recipient' | 'bcc') => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            if (fieldType === 'recipient') {
-                if (validateAndAddEmail(recipientInput, 'recipient')) {
-                    // If email was added successfully, focus on subject if no other recipients
-                    if (recipients.length === 0) {
-                        setTimeout(() => setFocus('subject'), 100);
-                    }
-                }
-            } else {
-                validateAndAddEmail(bccInput, 'bcc');
-            }
-        }
-    };
-
     const modules = {
         toolbar: [
             [{ header: [1, 2, false] }],
             ['bold', 'italic', 'underline', 'strike', 'blockquote'],
             [{ list: 'ordered' }, { list: 'bullet' }],
-            ['link', 'image'],
             ['clean'],
         ],
     };
 
     const [showAllRecipients, setShowAllRecipients] = React.useState(false);
     const [showAllBcc, setShowAllBcc] = React.useState(false);
+    const [expandRecipients, setExpandRecipients] = React.useState(false);
+    const [expandBcc, setExpandBcc] = React.useState(false);
+
+    // Templates loaded from markdown files
+    const [templates, setTemplates] = useState<{ id: string; name: string; subject: string; content: string }[]>([]);
+    const [selectedTemplate, setSelectedTemplate] = useState('');
+    useEffect(() => {
+        fetch('/templates')
+            .then((res) => res.json())
+            .then((data) => setTemplates(data))
+            .catch(() => setTemplates([]));
+    }, []);
+
+    // Bulk add state
+    const [showBulkRecipients, setShowBulkRecipients] = React.useState(false);
+    const [bulkRecipientsText, setBulkRecipientsText] = React.useState('');
+    const [showBulkBcc, setShowBulkBcc] = React.useState(false);
+    const [bulkBccText, setBulkBccText] = React.useState('');
+
+    const handleTemplateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const id = e.target.value;
+        setSelectedTemplate(id);
+        const tpl = templates.find((t) => t.id === id);
+        if (tpl) {
+            setValue('subject', tpl.subject);
+            setValue('content', tpl.content);
+        }
+    };
+
+    const handleAddBulk = (type: 'recipient' | 'bcc') => {
+        const input = type === 'recipient' ? bulkRecipientsText : bulkBccText;
+        validateAndAddEmail(input, type);
+        if (type === 'recipient') {
+            setBulkRecipientsText('');
+            setShowBulkRecipients(false);
+        } else {
+            setBulkBccText('');
+            setShowBulkBcc(false);
+        }
+    };
 
     return (
         <>
@@ -262,164 +276,183 @@ const EmailModal: React.FC<EmailModalProps> = ({ open, onClose, initialRecipient
                     )}
 
                     <form onSubmit={handleSubmit(onSubmit)}>
+                        {/* Template selection */}
+                        <Box sx={{ mb: 2 }}>
+                            <TextField
+                                select
+                                label="Mal"
+                                fullWidth
+                                size="small"
+                                value={selectedTemplate}
+                                onChange={handleTemplateChange}
+                                sx={{ mb: 2 }}
+                            >
+                                <MenuItem value="">Ingen</MenuItem>
+                                {templates.map((t) => (
+                                    <MenuItem key={t.id} value={t.id}>
+                                        {t.name}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Box>
+
                         <Box sx={{ mb: 2 }}>
                             <Typography variant="subtitle2" sx={{ mb: 1 }}>
                                 Mottakere *
                             </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Controller
-                                    name="recipientInput"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <TextField
-                                            {...field}
-                                            fullWidth
-                                            size="small"
-                                            placeholder="Skriv e-postadresse (trykk Enter for å legge til)"
-                                            onKeyDown={(e) => handleKeyDown(e, 'recipient')}
-                                            error={recipients.length === 0 && !!errors.recipients}
-                                            helperText={recipients.length === 0 ? 'Minst én mottaker er påkrevd' : ''}
-                                        />
-                                    )}
-                                />
-                                <IconButton onClick={handleAddRecipient} color="primary">
-                                    <AddIcon />
-                                </IconButton>
-                            </Box>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1, minHeight: '32px' }}>
-                                {recipients.length > 10 ? (
-                                    <>
-                                        {recipients.slice(0, 5).map((email) => (
-                                            <Chip
-                                                key={email}
-                                                label={
-                                                    email.length > 20 && window.innerWidth < 600
-                                                        ? `${email.substring(0, 17)}...`
-                                                        : email
-                                                }
-                                                onDelete={() => handleRemoveRecipient(email)}
-                                                size="small"
-                                                color="primary"
-                                                variant="outlined"
-                                                sx={{
-                                                    maxWidth: { xs: '100%', sm: '300px' },
-                                                    '& .MuiChip-label': {
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                    },
-                                                }}
-                                            />
-                                        ))}
-                                        <Chip
-                                            label={`+${recipients.length - 5} more`}
-                                            size="small"
-                                            color="default"
-                                            onClick={() => setShowAllRecipients(true)}
-                                        />
-                                    </>
-                                ) : (
-                                    recipients.map((email) => (
-                                        <Chip
-                                            key={email}
-                                            label={
-                                                email.length > 20 && window.innerWidth < 600
-                                                    ? `${email.substring(0, 17)}...`
-                                                    : email
+                            {/* integrated chip input */}
+                            <Controller
+                                name="recipients"
+                                control={control}
+                                rules={{ validate: (v) => v.length > 0 || 'Minst én mottaker er påkrevd' }}
+                                render={({ field: { value, onChange } }) => (
+                                    <Autocomplete
+                                        multiple
+                                        freeSolo
+                                        options={[]}
+                                        value={value}
+                                        onChange={(_, newVal) => onChange(newVal)}
+                                        renderTags={(tagValue, getTagProps) => {
+                                            if (tagValue.length <= 3) {
+                                                return tagValue.map((option, index) => (
+                                                    <Chip
+                                                        variant="outlined"
+                                                        size="small"
+                                                        label={option}
+                                                        {...getTagProps({ index })}
+                                                        onDelete={() => handleRemoveRecipient(option)}
+                                                    />
+                                                ));
                                             }
-                                            onDelete={() => handleRemoveRecipient(email)}
-                                            size="small"
-                                            color="primary"
-                                            variant="outlined"
-                                            sx={{
-                                                maxWidth: { xs: '100%', sm: '300px' },
-                                                '& .MuiChip-label': {
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                },
-                                            }}
-                                        />
-                                    ))
+                                            return expandRecipients ? (
+                                                <>
+                                                    {tagValue.map((option, idx) => (
+                                                        <Chip
+                                                            variant="outlined"
+                                                            size="small"
+                                                            label={option}
+                                                            {...getTagProps({ index: idx })}
+                                                            onDelete={() => handleRemoveRecipient(option)}
+                                                        />
+                                                    ))}
+                                                    <Chip
+                                                        variant="outlined"
+                                                        size="small"
+                                                        label="Skjul"
+                                                        onClick={() => setExpandRecipients(false)}
+                                                    />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {tagValue.slice(0, 3).map((option, index) => (
+                                                        <Chip
+                                                            variant="outlined"
+                                                            size="small"
+                                                            label={option}
+                                                            {...getTagProps({ index })}
+                                                            onDelete={() => handleRemoveRecipient(option)}
+                                                        />
+                                                    ))}
+                                                    <Chip
+                                                        variant="outlined"
+                                                        size="small"
+                                                        label={`+${tagValue.length - 3} flere`}
+                                                        onClick={() => setExpandRecipients(true)}
+                                                    />
+                                                </>
+                                            );
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                fullWidth
+                                                size="small"
+                                                placeholder="Skriv e-post, trykk Enter"
+                                                error={!!errors.recipients}
+                                                helperText={errors.recipients?.message}
+                                            />
+                                        )}
+                                    />
                                 )}
-                            </Box>
+                            />
                         </Box>
 
                         <Box sx={{ mb: 2 }}>
                             <Typography variant="subtitle2" sx={{ mb: 1 }}>
                                 BCC (blindkopi)
                             </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Controller
-                                    name="bccInput"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <TextField
-                                            {...field}
-                                            fullWidth
-                                            size="small"
-                                            placeholder="Legg til blindkopi (trykk Enter for å legge til)"
-                                            onKeyDown={(e) => handleKeyDown(e, 'bcc')}
-                                        />
-                                    )}
-                                />
-                                <IconButton onClick={handleAddBcc} color="primary">
-                                    <AddIcon />
-                                </IconButton>
-                            </Box>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1, minHeight: '32px' }}>
-                                {bcc.length > 10 ? (
-                                    <>
-                                        {bcc.slice(0, 5).map((email) => (
-                                            <Chip
-                                                key={email}
-                                                label={
-                                                    email.length > 20 && window.innerWidth < 600
-                                                        ? `${email.substring(0, 17)}...`
-                                                        : email
-                                                }
-                                                onDelete={() => handleRemoveBcc(email)}
-                                                size="small"
-                                                color="primary"
-                                                variant="outlined"
-                                                sx={{
-                                                    maxWidth: { xs: '100%', sm: '300px' },
-                                                    '& .MuiChip-label': {
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                    },
-                                                }}
-                                            />
-                                        ))}
-                                        <Chip
-                                            label={`+${bcc.length - 5} more`}
-                                            size="small"
-                                            color="default"
-                                            onClick={() => setShowAllBcc(true)}
-                                        />
-                                    </>
-                                ) : (
-                                    bcc.map((email) => (
-                                        <Chip
-                                            key={email}
-                                            label={
-                                                email.length > 20 && window.innerWidth < 600
-                                                    ? `${email.substring(0, 17)}...`
-                                                    : email
+                            {/* integrated chip input for bcc */}
+                            <Controller
+                                name="bcc"
+                                control={control}
+                                render={({ field: { value, onChange } }) => (
+                                    <Autocomplete
+                                        multiple
+                                        freeSolo
+                                        options={[]}
+                                        value={value}
+                                        onChange={(_, newVal) => onChange(newVal)}
+                                        renderTags={(tagValue, getTagProps) => {
+                                            if (tagValue.length <= 3) {
+                                                return tagValue.map((option, index) => (
+                                                    <Chip
+                                                        variant="outlined"
+                                                        size="small"
+                                                        label={option}
+                                                        {...getTagProps({ index })}
+                                                        onDelete={() => handleRemoveBcc(option)}
+                                                    />
+                                                ));
                                             }
-                                            onDelete={() => handleRemoveBcc(email)}
-                                            size="small"
-                                            color="primary"
-                                            variant="outlined"
-                                            sx={{
-                                                maxWidth: { xs: '100%', sm: '300px' },
-                                                '& .MuiChip-label': {
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                },
-                                            }}
-                                        />
-                                    ))
+                                            return expandBcc ? (
+                                                <>
+                                                    {tagValue.map((option, idx) => (
+                                                        <Chip
+                                                            variant="outlined"
+                                                            size="small"
+                                                            label={option}
+                                                            {...getTagProps({ index: idx })}
+                                                            onDelete={() => handleRemoveBcc(option)}
+                                                        />
+                                                    ))}
+                                                    <Chip
+                                                        variant="outlined"
+                                                        size="small"
+                                                        label="Skjul"
+                                                        onClick={() => setExpandBcc(false)}
+                                                    />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {tagValue.slice(0, 3).map((option, index) => (
+                                                        <Chip
+                                                            variant="outlined"
+                                                            size="small"
+                                                            label={option}
+                                                            {...getTagProps({ index })}
+                                                            onDelete={() => handleRemoveBcc(option)}
+                                                        />
+                                                    ))}
+                                                    <Chip
+                                                        variant="outlined"
+                                                        size="small"
+                                                        label={`+${tagValue.length - 3} flere`}
+                                                        onClick={() => setExpandBcc(true)}
+                                                    />
+                                                </>
+                                            );
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                fullWidth
+                                                size="small"
+                                                placeholder="Skriv e-post, trykk Enter"
+                                            />
+                                        )}
+                                    />
                                 )}
-                            </Box>
+                            />
                         </Box>
 
                         <Controller
@@ -488,6 +521,50 @@ const EmailModal: React.FC<EmailModalProps> = ({ open, onClose, initialRecipient
                     </form>
                 </Paper>
             </Modal>
+
+            {/* Bulk add recipients dialog */}
+            <Dialog open={showBulkRecipients} onClose={() => setShowBulkRecipients(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Bulk legg til mottakere</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        label="Lim inn e-poster"
+                        value={bulkRecipientsText}
+                        onChange={(e) => setBulkRecipientsText(e.target.value)}
+                        fullWidth
+                        multiline
+                        rows={4}
+                        placeholder="Skriv eller lim inn flere e-poster, separert med komma, semikolon eller linjeskift"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowBulkRecipients(false)}>Avbryt</Button>
+                    <Button variant="contained" onClick={() => handleAddBulk('recipient')}>
+                        Legg til
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Bulk add BCC dialog */}
+            <Dialog open={showBulkBcc} onClose={() => setShowBulkBcc(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Bulk legg til blindkopi</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        label="Lim inn e-poster"
+                        value={bulkBccText}
+                        onChange={(e) => setBulkBccText(e.target.value)}
+                        fullWidth
+                        multiline
+                        rows={4}
+                        placeholder="Skriv eller lim inn flere e-poster, separert med komma, semikolon eller linjeskift"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowBulkBcc(false)}>Avbryt</Button>
+                    <Button variant="contained" onClick={() => handleAddBulk('bcc')}>
+                        Legg til
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <Dialog
                 open={showAllRecipients}
