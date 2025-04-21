@@ -20,25 +20,24 @@ type SendEmailRequest = {
 export const action = async ({ request }: ActionFunctionArgs) => {
     const requestBody: SendEmailRequest = await request.json();
     try {
+        const request = {
+            from: process.env.SMTP_USERNAME,
+            to: requestBody.to,
+            bcc: requestBody.bcc,
+            subject: requestBody.subject,
+            text: requestBody.text,
+            html: requestBody.html,
+        };
+        console.log('Sending email', request);
         await new Promise<void>((resolve, reject) => {
-            transport.sendMail(
-                {
-                    from: process.env.SMTP_USERNAME,
-                    to: requestBody.to,
-                    bcc: requestBody.bcc,
-                    subject: requestBody.subject,
-                    text: requestBody.text,
-                    html: requestBody.html,
-                },
-                (error) => {
-                    console.error('Error sending email:', error, request);
-                    if (error) {
-                        return reject(error);
-                    }
-
-                    resolve();
+            transport.sendMail(request, (error) => {
+                console.error('Error sending email:', error, request);
+                if (error) {
+                    return reject(error);
                 }
-            );
+
+                resolve();
+            });
         });
     } catch (error) {
         return new Response(error.message, { status: 500 });

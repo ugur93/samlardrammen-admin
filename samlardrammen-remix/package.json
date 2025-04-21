@@ -11,6 +11,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@mdx-js/rollup": "^3.1.0",
     "@mui/icons-material": "next",
     "@mui/material": "next",
     "@mui/x-date-pickers": "next",
@@ -49,6 +50,8 @@
     "@types/react-dom": "^19.0.4",
     "@vercel/node": "^5.1.12",
     "@vercel/react-router": "^1.1.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-mdx-frontmatter": "^5.1.0",
     "tailwindcss": "^4.0.12",
     "typescript": "^5.8.2",
     "vite": "^6.2.1",

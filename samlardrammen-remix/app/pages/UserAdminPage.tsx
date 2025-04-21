@@ -275,29 +275,23 @@ const MembersTable: React.FC = () => {
                 </Box>
             </Box>
             <div>
-                <div className="flex justify-between">
-                    <Button variant="contained" color="primary" onClick={() => setCreateOrEdit(true)} sx={{ mb: 2 }}>
+                <div className="flex justify-between mb-2">
+                    <Button variant="contained" color="primary" onClick={() => setCreateOrEdit(true)}>
                         Legg til medlem
                     </Button>
 
-                    <div className="flex flex-row items-center gap-2">
-                        <div>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={() => setIsModalOpen(true)}
-                                sx={{ mb: 2 }}
-                            >
-                                Send epost
-                            </Button>
-                        </div>
-                        <Button onClick={copyMailListToClipboard} variant="text">
-                            Kopier mailliste
-                        </Button>
-                        <Button onClick={exportToCsv} variant="outlined" startIcon={<DownloadIcon />}>
-                            Last ned CSV
-                        </Button>
-                    </div>
+                    <Button onClick={exportToCsv} variant="outlined" startIcon={<DownloadIcon />}>
+                        Last ned CSV
+                    </Button>
+                </div>
+
+                <div className="flex flex-row items-end place-content-end gap-2">
+                    <Button variant="text" onClick={() => setIsModalOpen(true)}>
+                        Send epost
+                    </Button>
+                    <Button onClick={copyMailListToClipboard} variant="text">
+                        Kopier mailliste
+                    </Button>
                 </div>
             </div>
             <Paper>
