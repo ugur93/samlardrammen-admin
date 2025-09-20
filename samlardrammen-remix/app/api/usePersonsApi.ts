@@ -35,12 +35,12 @@ export const QueryKeys = {
 
 const fetchPersonsSimple = async (): Promise<PersonDatabase[]> => {
     const supabase = useGetSupabaseClient();
-    const { data, error } = await supabase.from('person').select('*');
+    const { data, error } = await supabase.from('person').select('*').neq('deleted', true);
     if (error) throw new Error(error.message);
     return data;
 };
 const fetchPersons = (supabase: SupabaseClient) => async (): Promise<PersonDetails[]> => {
-    const { data, error } = await supabase.from('person').select(personQUery2);
+    const { data, error } = await supabase.from('person').select(personQUery2).neq('deleted', true);
     if (error) throw new Error(error.message);
     return data.map(
         (person) =>
@@ -79,6 +79,7 @@ const fetchPersonByEmailSimple =
             .from('person')
             .select(personQUerySimple)
             .eq('email', email!)
+            .neq('deleted', true)
             .single();
         if (error) {
             console.error(error);
@@ -89,7 +90,12 @@ const fetchPersonByEmailSimple =
 const fetchPersonByEmail =
     (supabase: supabasejs.SupabaseClient) =>
     async (email?: string): Promise<PersonDetails | null> => {
-        const { data: person, error } = await supabase.from('person').select(personQUery).eq('email', email!).single();
+        const { data: person, error } = await supabase
+            .from('person')
+            .select(personQUery)
+            .eq('email', email!)
+            .neq('deleted', true)
+            .single();
         if (error) {
             console.error(error);
             return null;
@@ -104,6 +110,7 @@ const fetchPersonById =
             .from('person')
             .select(personQUery)
             .filter('id', 'eq', user_id)
+            .neq('deleted', true)
             .single();
         if (error) {
             console.error(error);
@@ -126,6 +133,7 @@ const fetchPersonByUserId =
             .from('person')
             .select(personQUery)
             .filter('user_id', 'eq', user_id)
+            .neq('deleted', true)
             .single();
         if (error) {
             console.error(error);
@@ -363,6 +371,22 @@ async function updateMembership(
         );
     }
 }
+export function useDeletePersonMutation() {
+    const qc = useQueryClient();
+    const supabase = useGetSupabaseClient();
+
+    return useMutation({
+        mutationFn: async (personId: number) => {
+            const { error } = await supabase.from('person').update({ deleted: true }).eq('id', personId);
+            if (error) throw new Error(error.message);
+
+            // Invalidate queries to refresh the data
+            await qc.refetchQueries({ queryKey: QueryKeys.fetchPersons });
+            await qc.refetchQueries({ queryKey: QueryKeys.fetchPersonById(personId.toString()) });
+        },
+    });
+}
+
 export const changePasswordMutation = () => {
     const supabase = useGetSupabaseClient();
 

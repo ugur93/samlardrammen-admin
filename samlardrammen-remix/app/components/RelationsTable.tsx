@@ -174,7 +174,7 @@ export const RelationsTable: React.FC<RelationsTableProps> = ({ relations, perso
         <Box>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">Familierelasjoner</Typography>
-                {user?.isAdmin && (
+                {user?.person?.isAdmin && (
                     <Button variant="outlined" color="primary" size="small" onClick={() => setIsDialogOpen(true)}>
                         Legg til familierelasjon
                     </Button>

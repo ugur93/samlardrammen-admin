@@ -1,10 +1,29 @@
-import { Box, Button, Card, CardContent, InputLabel, List, Paper, TextField, Typography } from '@mui/material';
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    InputLabel,
+    List,
+    Paper,
+    TextField,
+    Typography,
+} from '@mui/material';
 import Grid from '@mui/material/Grid2';
 
 import { format } from 'date-fns';
 import React, { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { useAddOrUpdatePaymentStatus, useCreatePersonMutation, useGetPersonById } from '../api/usePersonsApi';
+import {
+    useAddOrUpdatePaymentStatus,
+    useCreatePersonMutation,
+    useDeletePersonMutation,
+    useGetPersonById,
+} from '../api/usePersonsApi';
 import CustomListItemText from '../components/CustomListItemText';
 import { FormDatePicker } from '../components/FormDatePicker';
 import MembershipTable from '../components/MembershipTable';
@@ -34,8 +53,10 @@ export default function UserDetailsPage({ userId }: UserPageProps) {
 export const UserDetails: React.FC<UserPageProps> = ({ userId }) => {
     const { user } = useAppContext();
     const userDetails = useGetPersonById(userId);
+    const deletePersonFn = useDeletePersonMutation();
 
     const [isEditing, setIsEditing] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     function getUserDetails() {
         if (userId !== undefined) {
@@ -51,7 +72,6 @@ export const UserDetails: React.FC<UserPageProps> = ({ userId }) => {
     const { register, handleSubmit, reset } = methods;
 
     const onSubmit = (data: UserFormFields) => {
-        console.log('submit', data);
         createPersonFn.mutate({ person: data, existingPerson: userDetails });
         reset(mapToFormValues(getUserDetails()));
         setIsEditing(false);
@@ -60,6 +80,26 @@ export const UserDetails: React.FC<UserPageProps> = ({ userId }) => {
     const handleEditClick = () => {
         setIsEditing(true);
         reset(mapToFormValues(getUserDetails()));
+    };
+
+    const handleDeleteClick = () => {
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (details) {
+            deletePersonFn.mutate(details.person.id, {
+                onSuccess: () => {
+                    // Handle success, e.g., redirect or refresh
+                    window.location.reload();
+                },
+            });
+        }
+        setIsDeleteModalOpen(false);
+    };
+
+    const handleCancelDelete = () => {
+        setIsDeleteModalOpen(false);
     };
 
     function formatterAdresse(adresse?: AdressDatabase) {
@@ -184,9 +224,14 @@ export const UserDetails: React.FC<UserPageProps> = ({ userId }) => {
                                 </Grid>
                                 <Box className="flex flex-row gap-2 pt-3">
                                     {!isEditing && (
-                                        <Button variant="contained" onClick={handleEditClick}>
-                                            Rediger
-                                        </Button>
+                                        <>
+                                            <Button variant="contained" onClick={handleEditClick}>
+                                                Rediger
+                                            </Button>
+                                            <Button variant="outlined" color="error" onClick={handleDeleteClick}>
+                                                Slett bruker
+                                            </Button>
+                                        </>
                                     )}
                                 </Box>
                             </div>
@@ -202,6 +247,21 @@ export const UserDetails: React.FC<UserPageProps> = ({ userId }) => {
                 </Card>
 
                 <MembershipDetailsView person={details} />
+
+                <Dialog open={isDeleteModalOpen} onClose={handleCancelDelete}>
+                    <DialogTitle>Bekreft sletting</DialogTitle>
+                    <DialogContent>
+                        <Typography>
+                            Er du sikker på at du vil slette denne brukeren? Denne handlingen kan ikke angres.
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCancelDelete}>Avbryt</Button>
+                        <Button onClick={handleConfirmDelete} color="error">
+                            Slett
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </div>
         </div>
     );
