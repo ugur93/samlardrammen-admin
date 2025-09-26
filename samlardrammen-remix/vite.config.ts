@@ -8,7 +8,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig(({ command }) => ({
     ssr: {
-        noExternal: command === 'build' ? true : [/^@mui\//],
+        noExternal: command === 'build' ? true : [ /^@mui\//],  // Add MUI to externalize in dev for faster builds
     },
     plugins: [
         mdx({
@@ -26,4 +26,15 @@ export default defineConfig(({ command }) => ({
             },
         ],
     },
+  ...(command === 'serve' && {
+        build: {
+            minify: false,
+            sourcemap: false,  // Disable if not needed
+        },
+        server: {
+            hmr: {
+                overlay: false,
+            },
+        },
+    }),
 }));
