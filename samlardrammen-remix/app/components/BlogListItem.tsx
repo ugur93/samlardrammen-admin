@@ -10,9 +10,11 @@ import StoryblokImage from './StoryblokImage';
 
 interface BlogListItemProps {
     blog: BlogItem;
+    isFeatured?: boolean;
+    isGridItem?: boolean;
 }
 
-export const BlogListItem = ({ blog }: BlogListItemProps) => {
+export const BlogListItem = ({ blog, isFeatured = false, isGridItem = false }: BlogListItemProps) => {
     const publishedDate = blog.content.date_original_published
         ? format(new Date(blog.content.date_original_published), 'd MMMM yyyy', { locale: tr })
         : format(new Date(blog.first_published_at), 'd MMMM yyyy', { locale: tr });
@@ -38,28 +40,33 @@ export const BlogListItem = ({ blog }: BlogListItemProps) => {
             elevation={0}
             sx={{
                 width: '100%',
-                p: 2,
+                p: isFeatured ? 3 : isGridItem ? 2 : 2,
                 display: 'block',
                 textDecoration: 'none',
                 color: 'inherit',
                 transition: 'all 0.3s',
                 '&:hover': {
                     backgroundColor: 'rgba(0, 0, 0, 0.03)',
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.08)',
+                    boxShadow: isFeatured ? '0 8px 16px rgba(0,0,0,0.12)' : '0 4px 8px rgba(0,0,0,0.08)',
                     transform: 'translateY(-2px)',
                 },
                 border: '1px solid',
                 borderColor: 'divider',
                 borderRadius: 2,
+                mb: isFeatured ? 4 : 0,
             }}
         >
-            <Grid container spacing={3}>
-                <Grid item xs={12} md={4}>
+            <Grid container spacing={isFeatured ? 4 : isGridItem ? 0 : 3} direction={isGridItem ? 'column' : 'row'}>
+                <Grid item xs={12} md={isFeatured ? 6 : isGridItem ? 12 : 4}>
                     <Box
                         sx={{
                             position: 'relative',
-                            height: { xs: 200, md: '100%' },
-                            minHeight: { md: 200 },
+                            height: isFeatured 
+                                ? { xs: 250, md: 350 } 
+                                : isGridItem 
+                                ? { xs: 180, sm: 200 } 
+                                : { xs: 200, md: '100%' },
+                            minHeight: isFeatured ? { md: 350 } : isGridItem ? 180 : { md: 200 },
                             width: '100%',
                             borderRadius: 1,
                             overflow: 'hidden',
@@ -67,6 +74,7 @@ export const BlogListItem = ({ blog }: BlogListItemProps) => {
                             justifyContent: 'center',
                             alignItems: 'center',
                             bgcolor: hasImage ? 'transparent' : 'action.hover',
+                            mb: isGridItem ? 2 : 0,
                         }}
                     >
                         {hasImage ? (
@@ -101,7 +109,7 @@ export const BlogListItem = ({ blog }: BlogListItemProps) => {
                         )}
                     </Box>
                 </Grid>
-                <Grid item xs={12} md={hasImage ? 8 : 8}>
+                <Grid item xs={12} md={isFeatured ? 6 : isGridItem ? 12 : hasImage ? 8 : 8}>
                     <Box
                         sx={{
                             display: 'flex',
@@ -111,7 +119,22 @@ export const BlogListItem = ({ blog }: BlogListItemProps) => {
                         }}
                     >
                         <div>
-                            <Typography variant="h5" component="h2" gutterBottom color="text.primary">
+                            <Typography 
+                                variant={isFeatured ? "h3" : isGridItem ? "h6" : "h5"} 
+                                component="h2" 
+                                gutterBottom 
+                                color="text.primary"
+                                sx={{
+                                    fontSize: isFeatured 
+                                        ? { xs: '1.8rem', md: '2.2rem' } 
+                                        : isGridItem 
+                                        ? { xs: '1.1rem', sm: '1.25rem' }
+                                        : undefined,
+                                    fontWeight: isFeatured ? 700 : isGridItem ? 600 : 500,
+                                    lineHeight: isFeatured ? 1.2 : 1.4,
+                                    mb: isFeatured ? 2 : 1,
+                                }}
+                            >
                                 {blog.content.title}
                             </Typography>
                             <Typography
@@ -120,13 +143,14 @@ export const BlogListItem = ({ blog }: BlogListItemProps) => {
                                 paragraph
                                 sx={{
                                     flexGrow: 1,
-                                    fontSize: '0.9rem',
+                                    fontSize: isFeatured ? '1rem' : isGridItem ? '0.85rem' : '0.9rem',
                                     overflow: 'hidden',
                                     display: '-webkit-box',
-                                    WebkitLineClamp: 3,
+                                    WebkitLineClamp: isFeatured ? 4 : isGridItem ? 3 : 3,
                                     WebkitBoxOrient: 'vertical',
                                     textOverflow: 'ellipsis',
                                     mb: 2,
+                                    lineHeight: 1.5,
                                 }}
                             >
                                 {blog.content.preview}
@@ -141,14 +165,20 @@ export const BlogListItem = ({ blog }: BlogListItemProps) => {
                                 mt: 2,
                             }}
                         >
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography 
+                                variant="caption" 
+                                color="text.secondary"
+                                sx={{
+                                    fontSize: isFeatured ? '0.9rem' : isGridItem ? '0.75rem' : '0.8rem',
+                                }}
+                            >
                                 {publishedDate}
                             </Typography>
 
                             <Button
                                 variant="text"
                                 color="primary"
-                                size="small"
+                                size={isFeatured ? "medium" : "small"}
                                 endIcon={<ArrowForwardIcon fontSize="small" />}
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -156,10 +186,10 @@ export const BlogListItem = ({ blog }: BlogListItemProps) => {
                                 disableRipple
                                 sx={{
                                     minWidth: 'auto',
-                                    padding: '4px 8px',
+                                    padding: isFeatured ? '6px 12px' : '4px 8px',
                                     textTransform: 'none',
                                     fontWeight: 400,
-                                    fontSize: '0.875rem',
+                                    fontSize: isFeatured ? '0.95rem' : isGridItem ? '0.8rem' : '0.875rem',
                                     '&:hover': {
                                         backgroundColor: 'transparent',
                                         textDecoration: 'underline',

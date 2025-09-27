@@ -2,7 +2,7 @@ import AnnouncementIcon from '@mui/icons-material/Announcement';
 import ArticleIcon from '@mui/icons-material/Article';
 import EventIcon from '@mui/icons-material/Event';
 import FeedIcon from '@mui/icons-material/Feed';
-import { Box, Chip, Container, Grid, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Chip, Container, Grid, Tab, Tabs, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { compareDesc } from 'date-fns';
 import { useEffect, useRef, useState } from 'react';
@@ -112,19 +112,24 @@ export const BlogListingPage = () => {
           })
         : [];
 
-    // Reset scroll tracking when changing tabs
-    const handleTabChange = (categoryId: string) => {
+    // Separate featured (latest) post and the rest
+    const featuredPost = sortedBlogPosts.length > 0 ? sortedBlogPosts[0] : null;
+    const otherPosts = sortedBlogPosts.slice(1);
+
+    // Reset scroll tracking when changing tabs - handle both Tabs and Chips
+    const handleTabChange = (eventOrValue: React.SyntheticEvent | string, newValue?: string) => {
+        const categoryId = typeof eventOrValue === 'string' ? eventOrValue : newValue!;
         setActiveCategory(categoryId);
-        // // Reset scroll tracking state
+        // Reset scroll tracking state
         setScrollPosition(0);
         setHasRestored(true);
         window.scrollTo(0, 0);
     };
 
-    // Render category chips based on screen size
+    // Render category filters: Chips on mobile for touch-friendliness, Tabs on larger screens
     const renderCategoryFilters = () => {
         if (isMobile) {
-            // More compact grid layout for mobile
+            // Use Chips on mobile for better usability (no scrolling)
             return (
                 <Grid container spacing={0.5} sx={{ mb: 2 }}>
                     {BLOG_CATEGORIES.map((category) => (
@@ -153,47 +158,32 @@ export const BlogListingPage = () => {
                 </Grid>
             );
         } else {
-            // Compact horizontal layout for tablet and desktop
+            // Use Tabs on tablet and desktop for modern look
             return (
-                <Stack
-                    direction="row"
-                    spacing={0.5}
-                    sx={{
-                        pb: 1,
-                        justifyContent: 'center',
-                        flexWrap: isTablet ? 'wrap' : 'nowrap',
-                        gap: isTablet ? 0.5 : 0,
-                    }}
+                <Tabs
+                    value={activeCategory}
+                    onChange={handleTabChange}
+                    variant="standard"
+                    sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
                 >
                     {BLOG_CATEGORIES.map((category) => (
-                        <Chip
+                        <Tab
                             key={category.id}
+                            value={category.id}
                             label={category.name}
-                            onClick={() => handleTabChange(category.id)}
-                            color={activeCategory === category.id ? 'primary' : 'default'}
-                            variant={activeCategory === category.id ? 'filled' : 'outlined'}
-                            size="small"
                             icon={getIconComponent(category.icon)}
-                            sx={{
-                                fontWeight: activeCategory === category.id ? 600 : 400,
-                                px: 0.5,
-                                mb: isTablet ? 0.5 : 0,
-                                fontSize: '0.8rem',
-                                '& .MuiChip-icon': {
-                                    marginLeft: 0.5,
-                                    color: activeCategory === category.id ? 'inherit' : theme.palette.text.secondary,
-                                },
-                            }}
+                            iconPosition="start"
+                            sx={{ fontSize: '0.8rem', minHeight: 48 }}
                         />
                     ))}
-                </Stack>
+                </Tabs>
             );
         }
     };
 
     return (
-        <Container maxWidth="lg" sx={{ mb: 8 }}>
-            {/* Responsive Category Filters - more compact */}
+        <Container maxWidth="lg" sx={{ mb: 8, px: isMobile ? 2 : 3 }}>
+            {/* Modern Category Filters as Tabs */}
             <Box sx={{ mb: 1, mt: 3 }}>{renderCategoryFilters()}</Box>
 
             {isLoading ? (
@@ -206,11 +196,28 @@ export const BlogListingPage = () => {
                 </Box>
             ) : (
                 <>
-                    <Stack spacing={2} ref={listRef}>
-                        {sortedBlogPosts.map((post) => (
-                            <BlogListItem key={post.id} blog={post} />
-                        ))}
-                    </Stack>
+                    {/* Featured Post - Full Width at Top */}
+                    {featuredPost && (
+                        <Box sx={{ mb: 0, pb: 0 }}>
+                            <BlogListItem blog={featuredPost} isFeatured={true} />
+                        </Box>
+                    )}
+
+                    {/* Other Posts in 2x2 Grid */}
+                    {otherPosts.length > 0 && (
+                        <Box>
+                            <Typography variant="h6" sx={{ mb: 3, fontSize: '1.2rem', fontWeight: 600 }}>
+                                Diğer Yazılar
+                            </Typography>
+                            <Grid container spacing={isMobile ? 2 : 3}>
+                                {otherPosts.map((post) => (
+                                    <Grid item xs={12} sm={6} md={6} key={post.id}>
+                                        <BlogListItem blog={post} isGridItem={true} />
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        </Box>
+                    )}
 
                     {sortedBlogPosts.length === 0 && (
                         <Box sx={{ mt: 4, textAlign: 'center', color: 'black' }}>
@@ -224,3 +231,5 @@ export const BlogListingPage = () => {
 };
 
 export default BlogListingPage;
+
+
