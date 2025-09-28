@@ -8,12 +8,14 @@ export const loader = async () => {
         Object.keys(files)
             .filter((f) => f.endsWith('.mdx'))
             .map(async (fname) => {
-                const data = files[fname].frontmatter;
-                const Content = files[fname].default;
+                const file = files[fname]
+                const data = file.frontmatter;
+                const Content = file.default;
                 return {
                     id: data.id ?? fname.replace(/\.md$/, ''),
                     name: data.name ?? data.id,
-                    subject: data.subject,
+                    //@ts-ignore
+                    subject: data.subject ?? file.subject,
                     content: renderToString(<Content />),
                 };
             })

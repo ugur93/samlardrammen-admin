@@ -45,6 +45,7 @@ export default function MembersTableProvider({ children }: PropsWithChildren<unk
     const [page, setPage] = useState<number>(0);
     const [searchTerm, setSearchTerm] = useState<string>();
 
+    console.log(JSON.stringify(selectedOptions))
     function mapPersondetailsToTableData(personDetails: PersonDetails): MembersTableData {
         return {
             id: personDetails.person.id,

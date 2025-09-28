@@ -11,5 +11,8 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "always"
+  },
+  "[plaintext]": {
+    "editor.defaultFormatter": "498-00.httpformat"
   }
 }

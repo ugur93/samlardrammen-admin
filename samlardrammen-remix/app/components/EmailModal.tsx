@@ -21,6 +21,7 @@ import { useMutation } from '@tanstack/react-query';
 import React, { lazy, useEffect, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import 'react-quill-new/dist/quill.snow.css';
+
 const ReactQuill = lazy(() => import('react-quill-new'));
 
 interface EmailModalProps {
@@ -185,6 +186,7 @@ const EmailModal: React.FC<EmailModalProps> = ({ open, onClose, initialRecipient
             ['bold', 'italic', 'underline', 'strike', 'blockquote'],
             [{ list: 'ordered' }, { list: 'bullet' }],
             ['clean'],
+              ['table-better']
         ],
     };
 

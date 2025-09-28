@@ -144,7 +144,7 @@ const MembersTable: React.FC = () => {
     // React Query to fetch data
     const data = useGetPersons();
     useGetOrganizations();
-    const { page, rowsPerPage, filteredRows, handleChangeRowsPerPage, setPage, setSearchTerm } = useMembersTable();
+    const { page, rowsPerPage, filteredRows, handleChangeRowsPerPage, setPage, setSearchTerm, selectedOptions } = useMembersTable();
     const [createOrEdit, setCreateOrEdit] = useState<PersonDetails | boolean | undefined>(false);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -166,6 +166,7 @@ const MembersTable: React.FC = () => {
                 personDetails.membership?.filter((m) => m.paymentDetails.some((d) => d.payment_state == 'paid')) || [],
         };
     }
+    console.log(JSON.stringify(selectedOptions))
 
     function copyMailListToClipboard() {
         const mailList = filteredRows.map((d) => d.email).join(';');

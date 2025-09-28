@@ -15,7 +15,7 @@ import {
     type SelectChangeEvent,
     Typography,
 } from '@mui/material';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useGetOrganizations } from '../api/useOrganizationsApi';
 import { useMembersTable } from '../context/MembersTableContext';
 import { type MembershipDetails } from '../types/personTypes';
@@ -216,6 +216,10 @@ const TableFilterHeader: React.FC<TableFilterHeaderProps> = ({ className }) => {
         return groupValues.length === 0;
     };
 
+
+    useEffect(()=>{
+        handleOrganizationChange({target: {value: ["Tyrkisk Samlar Kulturforening"]}})
+    }, [])
     return (
         <Paper className={`p-2 ${className}`}>
             <Box className="flex flex-wrap gap-4 mb-2">

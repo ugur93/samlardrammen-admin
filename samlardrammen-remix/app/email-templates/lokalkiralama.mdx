@@ -1,0 +1,22 @@
+---
+name: Lokal kiralama
+---
+export const getNextFriday = () => {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 5 = Friday
+  const daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+  const nextFriday = new Date(today);
+  nextFriday.setDate(today.getDate() + daysUntilFriday);
+  return nextFriday.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
+export const subject = `Bu Cuma (${getNextFriday()}) günü, çocukların çalışması nedeniyle lokalimiz 18.00 – 19.15 saatleri arasında kapalı olacaktır`;
+
+<div>
+    <h3>Değerli üyeler,</h3>
+    <br/>
+    <p>Bu Cuma ({getNextFriday()}) günü, çocukların çalışması nedeniyle lokalimiz 18.00 – 19.15 saatleri arasında kapalı olacaktır.</p>
+    <p>Saat 19.15'ten sonra tekrar herkese açıktır</p>
+    <br/>
+    <p>Saygılarımızla<br/>Sekreter<br/>Uğur Alpay Cenar</p>
+</div>
